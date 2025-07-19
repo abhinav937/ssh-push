@@ -1,31 +1,16 @@
 #!/bin/bash
-# SSH Push Tool
-# This script is installed in /usr/local/bin/ and needs to find ssh_push.py
+# SSH Push Tool Wrapper
+# This script calls the ssh_push.py Python script
 
-# Try to find ssh_push.py in the current directory first (for development)
-if [[ -f "./ssh_push.py" ]]; then
-    python3 "./ssh_push.py" "$@"
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Check if ssh_push.py exists in the same directory
+if [[ -f "$SCRIPT_DIR/ssh_push.py" ]]; then
+    python3 "$SCRIPT_DIR/ssh_push.py" "$@"
     exit $?
-fi
-
-# Look for ssh_push.py in common git repository locations
-REPO_LOCATIONS=(
-    "/mnt/c/Users/abhin/OneDrive/GitHub/Lattice_NanoIce/ssh_flash"
-    "$HOME/Lattice_NanoIce/ssh_flash"
-    "$HOME/GitHub/Lattice_NanoIce/ssh_flash"
-    "/opt/Lattice_NanoIce/ssh_flash"
-)
-
-for location in "${REPO_LOCATIONS[@]}"; do
-    if [[ -f "$location/ssh_push.py" ]]; then
-        python3 "$location/ssh_push.py" "$@"
-        exit $?
-    fi
-done
-
-echo "Error: Could not find ssh_push.py"
-echo "Please ensure the Lattice_NanoIce repository is available in one of these locations:"
-for location in "${REPO_LOCATIONS[@]}"; do
-    echo "  $location"
-done
-exit 1 
+else
+    echo "Error: Could not find ssh_push.py in $SCRIPT_DIR"
+    echo "Please ensure the SSH Push tool is properly installed."
+    exit 1
+fi 
