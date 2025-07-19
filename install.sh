@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SSH Push Tool - Simple Installation Script
-# Version: 3.0.0 - Complete rebuild from scratch
+# Version: 3.0.1 - Complete rebuild from scratch
 
 set -e
 
@@ -51,7 +51,7 @@ create_ssh_push_script() {
 #!/usr/bin/env python3
 """
 SSH Push Tool - Self-contained script for pushing files to remote devices
-Version: 3.0.0
+Version: 3.0.1
 """
 
 import os
@@ -287,7 +287,7 @@ Examples:
     parser.add_argument('--test', '-t', action='store_true', help='Test SSH connection')
     parser.add_argument('--config', '-c', action='store_true', help='Show current configuration')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    parser.add_argument('--version', action='version', version='ssh-push 3.0.0')
+    parser.add_argument('--version', action='version', version='ssh-push 3.0.1')
     
     args = parser.parse_args()
     
@@ -357,45 +357,7 @@ setup_shell_alias() {
     print_success "SSH Push alias added to $shell_rc"
 }
 
-# Function to verify installation
-verify_installation() {
-    local script_path="$1"
-    
-    print_status "Verifying installation..."
-    
-    # Wait a moment for file system to sync
-    sleep 0.5
-    
-    if [[ -f "$script_path" ]]; then
-        print_success "SSH Push script exists"
-    else
-        print_error "SSH Push script NOT found"
-        return 1
-    fi
-    
-    if [[ -x "$script_path" ]]; then
-        print_success "SSH Push script is executable"
-    else
-        print_error "SSH Push script is NOT executable"
-        return 1
-    fi
-    
-    # Test if command is accessible
-    if command -v ssh-push &> /dev/null; then
-        print_success "ssh-push command is accessible"
-    else
-        print_warning "ssh-push command is NOT accessible in current session"
-        print_status "Try: source ~/.bashrc or restart your terminal"
-    fi
-    
-    # Test the script directly
-    if "$script_path" --version &> /dev/null; then
-        print_success "SSH Push script runs correctly"
-    else
-        print_error "SSH Push script failed to run"
-        return 1
-    fi
-}
+
 
 # Function to confirm installation
 confirm_installation() {
@@ -449,21 +411,6 @@ main_installation() {
     
     # Setup shell alias
     setup_shell_alias "$script_path"
-    
-    # Small delay to ensure file system sync
-    sleep 1
-    
-    # Verify installation (but don't fail if verification has issues)
-    if ! verify_installation "$script_path"; then
-        print_warning "Verification had some issues, but installation may still be successful"
-        print_status "Testing ssh-push command directly..."
-        if "$script_path" --version &> /dev/null; then
-            print_success "SSH Push script works correctly"
-        else
-            print_error "SSH Push script failed to run"
-            exit 1
-        fi
-    fi
     
     # Show completion message
     echo ""
