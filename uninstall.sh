@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SSH Push Tool - Simple Uninstall Script
-# Version: 3.0.0 - Complete rebuild from scratch
+# Version: 3.0.1 - Complete rebuild from scratch
 
 set -e
 
