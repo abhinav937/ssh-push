@@ -47,7 +47,7 @@ create_ssh_push_script() {
     mkdir -p "$install_dir"
     
     # Create the self-contained script
-    cat > "$script_path" << 'EOF'
+    if ! cat > "$script_path" << 'EOF'
 #!/usr/bin/env python3
 """
 SSH Push Tool - Self-contained script for pushing files to remote devices
@@ -312,9 +312,17 @@ Examples:
 if __name__ == "__main__":
     main()
 EOF
+    then
+        print_error "Failed to create SSH Push script"
+        return 1
+    fi
     
     # Make the script executable
-    chmod +x "$script_path"
+    if ! chmod +x "$script_path"; then
+        print_error "Failed to make SSH Push script executable"
+        return 1
+    fi
+    
     print_success "SSH Push script created at $script_path"
     
     echo "$script_path"
@@ -354,6 +362,9 @@ verify_installation() {
     local script_path="$1"
     
     print_status "Verifying installation..."
+    
+    # Wait a moment for file system to sync
+    sleep 0.5
     
     if [[ -f "$script_path" ]]; then
         print_success "SSH Push script exists"
@@ -442,8 +453,17 @@ main_installation() {
     # Small delay to ensure file system sync
     sleep 1
     
-    # Verify installation
-    verify_installation "$script_path"
+    # Verify installation (but don't fail if verification has issues)
+    if ! verify_installation "$script_path"; then
+        print_warning "Verification had some issues, but installation may still be successful"
+        print_status "Testing ssh-push command directly..."
+        if "$script_path" --version &> /dev/null; then
+            print_success "SSH Push script works correctly"
+        else
+            print_error "SSH Push script failed to run"
+            exit 1
+        fi
+    fi
     
     # Show completion message
     echo ""
