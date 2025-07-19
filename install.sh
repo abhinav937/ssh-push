@@ -379,14 +379,26 @@ install_ssh_push_tool() {
         cp "$SCRIPT_DIR/ssh-push" "$ssh_push_script"
         print_status "Using local ssh-push script"
     else
-        # Remote installation
-        local timestamp=$(date +%s)
-        if curl -s -H "Cache-Control: no-cache" -H "Pragma: no-cache" -o "$ssh_push_script" "https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push?t=$timestamp" 2>/dev/null; then
-            print_status "Downloaded ssh-push script from repository"
-        else
-            print_error "Failed to download ssh-push script"
-            exit 1
-        fi
+        # Create the correct wrapper script
+        cat > "$ssh_push_script" << 'EOF'
+#!/bin/bash
+# SSH Push Tool Wrapper
+# This script calls the ssh_push.py Python script
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Check if ssh_push.py exists in the same directory
+if [[ -f "$SCRIPT_DIR/ssh_push.py" ]]; then
+    python3 "$SCRIPT_DIR/ssh_push.py" "$@"
+    exit $?
+else
+    echo "Error: Could not find ssh_push.py in $SCRIPT_DIR"
+    echo "Please ensure the SSH Push tool is properly installed."
+    exit 1
+fi
+EOF
+        print_status "Created ssh-push wrapper script"
     fi
     
     # Make executable
