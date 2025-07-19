@@ -1,419 +1,329 @@
 #!/bin/bash
 
-# SSH Push Tool Installation Script
-# Cross-platform installation with professional UI and comprehensive error handling
-# Version: 2.0.0
+# SSH Push Tool - Simple Installation Script
+# Version: 3.0.0 - Complete rebuild from scratch
 
-set -e  # Exit on any error
+set -e
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-PURPLE='\033[0;35m'
-BOLD='\033[1m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Get current timestamp
-get_timestamp() {
-    date '+%Y-%m-%d %H:%M:%S'
+# Helper functions
+print_status() { echo -e "${BLUE}[INFO]${NC} $1"; }
+print_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+# Function to show help
+show_help() {
+    echo "SSH Push Tool - Simple Installation"
+    echo ""
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --help, -h     Show this help message"
+    echo "  --force, -f    Force installation without prompts"
+    echo ""
+    echo "Examples:"
+    echo "  $0             # Interactive installation"
+    echo "  $0 --force     # Force installation"
+    echo ""
+    echo "One-line installation:"
+    echo "  bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/install.sh)"
 }
 
-# Helper functions with timestamps
-print_status() { echo -e "${BLUE}[$(get_timestamp)] [INFO]${NC} $1"; }
-print_success() { echo -e "${GREEN}[$(get_timestamp)] [SUCCESS]${NC} $1"; }
-print_warning() { echo -e "${YELLOW}[$(get_timestamp)] [WARNING]${NC} $1"; }
-print_error() { echo -e "${RED}[$(get_timestamp)] [ERROR]${NC} $1"; }
-print_update() { echo -e "${CYAN}[$(get_timestamp)] [UPDATE]${NC} $1"; }
-print_header() { echo -e "${PURPLE}${BOLD}$1${NC}"; }
-
-# Store original directory
-ORIGINAL_DIR="$(pwd)"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Function to check for updates
-check_for_updates() {
-    print_status "Checking for updates..."
-    
-    local updates_found=false
-    
-    # Check for script self-updates (only when running via curl)
-    if [[ -z "$SCRIPT_DIR" ]] || [[ "$SCRIPT_DIR" == "/tmp" ]]; then
-        print_status "Checking for script updates..."
-        local temp_script="/tmp/install_check.sh"
-        local timestamp=$(date +%s)
-        if curl -s -H "Cache-Control: no-cache" -H "Pragma: no-cache" -o "$temp_script" "https://raw.githubusercontent.com/abhinav937/ssh-push/main/install.sh?t=$timestamp" 2>/dev/null; then
-            # Compare with current script (if we can determine it)
-            local current_script=""
-            if [[ -n "$BASH_SOURCE" ]] && [[ -f "$BASH_SOURCE" ]]; then
-                current_script="$BASH_SOURCE"
-            elif [[ -f "/tmp/install.sh" ]]; then
-                current_script="/tmp/install.sh"
-            fi
-            
-            if [[ -n "$current_script" ]] && [[ -f "$current_script" ]]; then
-                if ! cmp -s "$temp_script" "$current_script"; then
-                    print_status "Script update available"
-                    updates_found=true
-                    # Download the updated script
-                    if cp "$temp_script" "$current_script" 2>/dev/null; then
-                        chmod +x "$current_script"
-                        print_success "Script updated to latest version"
-                    else
-                        print_warning "Could not update script automatically"
-                    fi
-                else
-                    print_success "Script is up to date"
-                fi
-            else
-                print_status "Could not determine current script location for comparison"
-            fi
-            rm -f "$temp_script"
-        else
-            print_warning "Could not check for script updates"
-        fi
-    fi
-    
-    # Check ssh-push tool updates
-    local ssh_push_script="$HOME/.local/bin/ssh-push"
-    if [[ -f "$ssh_push_script" ]]; then
-        local temp_script="/tmp/ssh_push_check"
-        local timestamp=$(date +%s)
-        if curl -s -H "Cache-Control: no-cache" -H "Pragma: no-cache" -o "$temp_script" "https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push?t=$timestamp" 2>/dev/null; then
-            if ! cmp -s "$temp_script" "$ssh_push_script"; then
-                print_update "SSH Push tool update available"
-                updates_found=true
-            else
-                print_success "SSH Push tool is up to date"
-            fi
-            rm -f "$temp_script"
-        else
-            print_warning "Could not check SSH Push tool updates"
-        fi
-    fi
-    
-    if [[ "$updates_found" == "true" ]]; then
-        return 0  # Updates needed
-    else
-        return 1  # No updates needed
-    fi
-}
-
-# Function to update all components
-update_all_components() {
-    print_status "Updating all components..."
-    
-    local updates_performed=false
-    
-    # Update ssh-push tool
-    if update_ssh_push_tool; then
-        updates_performed=true
-    fi
-    
-    if [[ "$updates_performed" == "true" ]]; then
-        print_success "All available updates completed"
-        return 0
-    else
-        print_status "No updates were needed"
-        return 1
-    fi
-}
-
-# Function to update ssh-push tool
-update_ssh_push_tool() {
-    print_status "Updating SSH Push tool..."
-    
-    local ssh_push_script=""
-    
-    # Check if we're running from a git repository (local installation)
-    if [[ -f "$SCRIPT_DIR/ssh-push" ]]; then
-        ssh_push_script="$SCRIPT_DIR/ssh-push"
-        print_status "Using local SSH Push tool from repository"
-        return 0
-    else
-        # We're running via curl, so we need to download/update the tool
-        ssh_push_script="$HOME/.local/bin/ssh-push"
-        mkdir -p "$(dirname "$ssh_push_script")"
-        
-        local temp_script="/tmp/ssh_push_new"
-        
-        # Download latest version with cache-busting
-        local timestamp=$(date +%s)
-        if curl -s -H "Cache-Control: no-cache" -H "Pragma: no-cache" -o "$temp_script" "https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push?t=$timestamp" 2>/dev/null; then
-            # Check if files are different
-            if [[ ! -f "$ssh_push_script" ]] || ! cmp -s "$temp_script" "$ssh_push_script"; then
-                mv "$temp_script" "$ssh_push_script"
-                chmod +x "$ssh_push_script"
-                print_success "SSH Push tool updated to $ssh_push_script"
-                return 0
-            else
-                rm "$temp_script"
-                print_status "SSH Push tool is already up to date"
-                return 1
-            fi
-        else
-            print_error "Failed to download SSH Push tool update"
-            rm -f "$temp_script"
-            return 1
-        fi
-    fi
-}
-
-# Function to self-update the script
-self_update_script() {
-    # Only attempt self-update when running via curl (not from local repository)
-    if [[ -z "$SCRIPT_DIR" ]] || [[ "$SCRIPT_DIR" == "/tmp" ]]; then
-        print_status "Checking for script self-updates..."
-        
-        # Clear any local curl cache
-        if command -v curl-config &> /dev/null; then
-            local curl_cache_dir=$(curl-config --ca-path 2>/dev/null | sed 's|/ca-bundle.crt||')
-            if [[ -n "$curl_cache_dir" ]] && [[ -d "$curl_cache_dir" ]]; then
-                print_status "Clearing curl cache..."
-                rm -rf "$curl_cache_dir"/* 2>/dev/null || true
-            fi
-        fi
-        
-        local temp_script="/tmp/install_self_update.sh"
-        # Add cache-busting headers and timestamp to bypass caching
-        local timestamp=$(date +%s)
-        if [[ "${NO_CACHE:-false}" == "true" ]]; then
-            print_status "Forcing cache bypass..."
-        fi
-        print_status "Downloading latest script version (timestamp: $timestamp)..."
-        if curl -s -H "Cache-Control: no-cache, no-store, must-revalidate" -H "Pragma: no-cache" -H "Expires: 0" -o "$temp_script" "https://raw.githubusercontent.com/abhinav937/ssh-push/main/install.sh?t=$timestamp" 2>/dev/null; then
-            # Extract version numbers for comparison
-            local current_version=""
-            local latest_version=""
-            
-            if [[ -n "$BASH_SOURCE" ]] && [[ -f "$BASH_SOURCE" ]]; then
-                current_version=$(grep -o "Version: [0-9.]*" "$BASH_SOURCE" | cut -d' ' -f2)
-            fi
-            latest_version=$(grep -o "Version: [0-9.]*" "$temp_script" | cut -d' ' -f2)
-            
-            print_status "Current version: ${current_version:-unknown}, Latest version: ${latest_version:-unknown}"
-            
-            # Try to determine the current script location
-            local current_script=""
-            if [[ -n "$BASH_SOURCE" ]] && [[ -f "$BASH_SOURCE" ]]; then
-                current_script="$BASH_SOURCE"
-            elif [[ -f "/tmp/install.sh" ]]; then
-                current_script="/tmp/install.sh"
-            fi
-            
-            if [[ -n "$current_script" ]] && [[ -f "$current_script" ]]; then
-                if ! cmp -s "$temp_script" "$current_script"; then
-                    print_status "Script update available (current: ${current_version:-unknown}, latest: ${latest_version:-latest}) - updating..."
-                    if cp "$temp_script" "$current_script" 2>/dev/null; then
-                        chmod +x "$current_script"
-                        print_success "Script updated to version ${latest_version:-latest}"
-                        # Re-execute the updated script
-                        exec bash "$current_script" "$@"
-                        exit 0
-                    else
-                        print_warning "Could not update script automatically"
-                    fi
-                else
-                    print_success "Script is up to date (version: ${current_version:-unknown})"
-                fi
-            else
-                print_status "Could not determine current script location for self-update"
-            fi
-            rm -f "$temp_script"
-        else
-            print_warning "Could not check for script self-updates"
-        fi
-    fi
-}
-
-# Function to setup ssh-push tool
-setup_ssh_push_tool() {
-    print_status "Setting up SSH Push tool..."
-    
-    # Check if ssh-push tool needs updating
-    local ssh_push_updated=false
-    local ssh_push_script="$HOME/.local/bin/ssh-push"
-    
-    if [[ -f "$ssh_push_script" ]]; then
-        local temp_script="/tmp/ssh_push_check"
-        local timestamp=$(date +%s)
-        if curl -s -H "Cache-Control: no-cache" -H "Pragma: no-cache" -o "$temp_script" "https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push?t=$timestamp" 2>/dev/null; then
-            if ! cmp -s "$temp_script" "$ssh_push_script"; then
-                # Update ssh-push tool
-                mv "$temp_script" "$ssh_push_script"
-                chmod +x "$ssh_push_script"
-                print_update "SSH Push tool updated successfully"
-                ssh_push_updated=true
-            else
-                rm "$temp_script"
-                print_success "SSH Push tool is up to date"
-            fi
-        else
-            print_warning "Could not check SSH Push tool updates"
-        fi
-    else
-        # First time installation
-        update_ssh_push_tool
-        ssh_push_updated=true
-    fi
-    
-    # Determine shell configuration file
-    local shell_rc=""
-    if [[ "$SHELL" == *"zsh"* ]]; then
-        shell_rc="$HOME/.zshrc"
-    else
-        shell_rc="$HOME/.bashrc"
-    fi
-    
-    # Remove existing ssh-push alias if present
-    if grep -q "alias ssh-push=" "$shell_rc" 2>/dev/null; then
-        sed -i.bak '/# SSH Push Tool alias/d' "$shell_rc"
-        sed -i.bak '/alias ssh-push=/d' "$shell_rc"
-    fi
-    
-    # Add ssh-push alias - use the correct path based on installation method
-    local ssh_push_script=""
-    if [[ -f "$SCRIPT_DIR/ssh-push" ]]; then
-        ssh_push_script="$SCRIPT_DIR/ssh-push"
-    else
-        ssh_push_script="$HOME/.local/bin/ssh-push"
-    fi
-    
-    # Add the alias to shell configuration
-    echo "" >> "$shell_rc"
-    echo "# SSH Push Tool alias" >> "$shell_rc"
-    echo "alias ssh-push='$ssh_push_script'" >> "$shell_rc"
-    
-    print_success "SSH Push tool alias added to $shell_rc"
-    print_status "You can now use 'ssh-push' command from anywhere"
-}
-
-# Function to detect OS and architecture
-detect_platform() {
-    print_status "Detecting platform..."
-    
-    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-    ARCH=$(uname -m)
-    
-    case "$OS" in
-      linux)
-        case "$ARCH" in
-          x86_64) PLATFORM="linux-x64" ;;
-          aarch64) PLATFORM="linux-arm64" ;;
-          riscv64) PLATFORM="linux-riscv64" ;;
-          *) print_error "Unsupported architecture for Linux: $ARCH"; exit 1 ;;
-        esac
-        ;;
-      darwin)
-        case "$ARCH" in
-          x86_64) PLATFORM="darwin-x64" ;;
-          arm64) PLATFORM="darwin-arm64" ;;
-          *) print_error "Unsupported architecture for macOS: $ARCH"; exit 1 ;;
-        esac
-        ;;
-      freebsd)
-        case "$ARCH" in
-          amd64) PLATFORM="freebsd-x64" ;;
-          *) print_error "Unsupported architecture for FreeBSD: $ARCH"; exit 1 ;;
-        esac
-        ;;
-      mingw* | msys* | cygwin*)
-        if [ "$ARCH" != "x86_64" ]; then
-          print_error "Unsupported architecture for Windows: $ARCH"; exit 1
-        fi
-        PLATFORM="windows-x64"
-        ;;
-      *)
-        print_error "Unsupported OS: $OS"; exit 1
-        ;;
-    esac
-    
-    print_success "Detected platform: $PLATFORM ($OS $ARCH)"
-}
-
-# Function to check dependencies
-check_dependencies() {
-    print_status "Checking dependencies..."
-    
-    # Check for Python 3
-    if ! command -v python3 &> /dev/null; then
-        print_error "Python 3 is required but not installed."
-        print_status "Please install Python 3 and try again."
-        exit 1
-    fi
-    
-    # Check for SSH client
-    if ! command -v ssh &> /dev/null; then
-        print_error "SSH client is required but not installed."
-        print_status "Please install OpenSSH client and try again."
-        exit 1
-    fi
-    
-    # Check for SCP
-    if ! command -v scp &> /dev/null; then
-        print_error "SCP is required but not installed."
-        print_status "Please install OpenSSH client (includes SCP) and try again."
-        exit 1
-    fi
-    
-    print_success "Python 3 found: $(python3 --version)"
-    print_success "SSH client found: $(ssh -V 2>&1)"
-    print_success "SCP found: $(scp -V 2>&1 | head -n1)"
-}
-
-# Function to install ssh-push tool
-install_ssh_push_tool() {
-    print_status "Installing SSH Push tool..."
-    
-    # Create installation directory
+# Function to create the self-contained ssh-push script
+create_ssh_push_script() {
     local install_dir="$HOME/.local/bin"
+    local script_path="$install_dir/ssh-push"
+    
+    print_status "Creating self-contained SSH Push script..."
+    
+    # Create the installation directory
     mkdir -p "$install_dir"
     
-    # Copy ssh-push script
-    local ssh_push_script="$install_dir/ssh-push"
+    # Create the self-contained script
+    cat > "$script_path" << 'EOF'
+#!/usr/bin/env python3
+"""
+SSH Push Tool - Self-contained script for pushing files to remote devices
+Version: 3.0.0
+"""
+
+import os
+import sys
+import json
+import argparse
+import subprocess
+import getpass
+from pathlib import Path
+
+class SSHPushTool:
+    def __init__(self):
+        self.config_file = ".ssh_push_config.json"
+        self.config = self.load_config()
     
-    if [[ -f "$SCRIPT_DIR/ssh-push" ]]; then
-        # Local installation
-        cp "$SCRIPT_DIR/ssh-push" "$ssh_push_script"
-        print_status "Using local ssh-push script"
-    else
-        # Create the correct wrapper script
-        cat > "$ssh_push_script" << 'EOF'
-#!/bin/bash
-# SSH Push Tool Wrapper
-# This script calls the ssh_push.py Python script
+    def load_config(self):
+        """Load SSH configuration from file"""
+        if os.path.exists(self.config_file):
+            try:
+                with open(self.config_file, 'r') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, IOError):
+                return None
+        return None
+    
+    def save_config(self, config):
+        """Save SSH configuration to file"""
+        try:
+            with open(self.config_file, 'w') as f:
+                json.dump(config, f, indent=2)
+            print(f"Configuration saved to {self.config_file}")
+            return True
+        except IOError as e:
+            print(f"Error saving configuration: {e}")
+            return False
+    
+    def setup_config(self):
+        """Interactive setup of SSH configuration"""
+        print("SSH Push Tool Configuration Setup")
+        print("==================================")
+        
+        config = {}
+        
+        # Hostname
+        while True:
+            hostname = input("Remote hostname/IP (e.g., pi@192.168.1.100): ").strip()
+            if hostname:
+                config['hostname'] = hostname
+                break
+            print("Hostname is required.")
+        
+        # Port
+        port = input("SSH port (default: 22): ").strip()
+        config['port'] = int(port) if port.isdigit() else 22
+        
+        # Remote directory
+        remote_dir = input("Remote working directory (default: ~/fpga_work): ").strip()
+        config['remote_dir'] = remote_dir if remote_dir else "~/fpga_work"
+        
+        # Authentication method
+        while True:
+            auth_method = input("Authentication method (key/password) [key]: ").strip().lower()
+            if not auth_method:
+                auth_method = "key"
+            if auth_method in ["key", "password"]:
+                config['auth_method'] = auth_method
+                break
+            print("Please choose 'key' or 'password'.")
+        
+        # SSH key path (if using key authentication)
+        if auth_method == "key":
+            key_path = input("SSH key path (default: ~/.ssh/id_rsa): ").strip()
+            config['key_path'] = key_path if key_path else "~/.ssh/id_rsa"
+        
+        if self.save_config(config):
+            print("Configuration setup complete!")
+            return True
+        return False
+    
+    def edit_config(self):
+        """Edit existing configuration"""
+        if not self.config:
+            print("No configuration found. Run setup first.")
+            return False
+        
+        print("Current configuration:")
+        self.show_config()
+        
+        if input("Edit configuration? (y/N): ").lower() == 'y':
+            return self.setup_config()
+        return True
+    
+    def show_config(self):
+        """Show current configuration"""
+        if not self.config:
+            print("No SSH configuration found.")
+            print("Run with --setup to create configuration.")
+            return
+        
+        print("Current SSH configuration:")
+        print(f"  Hostname: {self.config.get('hostname', 'Not set')}")
+        print(f"  Port: {self.config.get('port', 'Not set')}")
+        print(f"  Remote Directory: {self.config.get('remote_dir', 'Not set')}")
+        print(f"  Auth Method: {self.config.get('auth_method', 'Not set')}")
+        if self.config.get('auth_method') == 'key':
+            print(f"  SSH Key: {self.config.get('key_path', 'Not set')}")
+    
+    def test_connection(self):
+        """Test SSH connection"""
+        if not self.config:
+            print("No configuration found. Run setup first.")
+            return False
+        
+        print("Testing SSH connection...")
+        
+        # Build SSH command
+        ssh_cmd = ["ssh"]
+        
+        if self.config.get('auth_method') == 'key':
+            ssh_cmd.extend(["-i", os.path.expanduser(self.config['key_path'])])
+        
+        ssh_cmd.extend(["-p", str(self.config['port'])])
+        ssh_cmd.append(self.config['hostname'])
+        ssh_cmd.append("echo 'SSH connection successful!'")
+        
+        try:
+            result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                print("SSH connection successful!")
+                return True
+            else:
+                print(f"SSH connection failed: {result.stderr}")
+                return False
+        except subprocess.TimeoutExpired:
+            print("SSH connection timed out.")
+            return False
+        except Exception as e:
+            print(f"SSH connection error: {e}")
+            return False
+    
+    def list_remote_files(self):
+        """List files in remote directory"""
+        if not self.config:
+            print("No configuration found. Run setup first.")
+            return False
+        
+        print("Listing remote files...")
+        
+        # Build SSH command
+        ssh_cmd = ["ssh"]
+        
+        if self.config.get('auth_method') == 'key':
+            ssh_cmd.extend(["-i", os.path.expanduser(self.config['key_path'])])
+        
+        ssh_cmd.extend(["-p", str(self.config['port'])])
+        ssh_cmd.append(self.config['hostname'])
+        ssh_cmd.append(f"ls -la {self.config['remote_dir']}")
+        
+        try:
+            result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                print("Remote files:")
+                print(result.stdout)
+            else:
+                print(f"Failed to list remote files: {result.stderr}")
+        except Exception as e:
+            print(f"Error listing remote files: {e}")
+    
+    def push_files(self, files, verbose=False):
+        """Push files to remote device"""
+        if not self.config:
+            print("No configuration found. Run setup first.")
+            return False
+        
+        if not files:
+            print("No files specified to push.")
+            return False
+        
+        print(f"Pushing {len(files)} file(s) to remote device...")
+        
+        # Build SCP command
+        scp_cmd = ["scp"]
+        
+        if verbose:
+            scp_cmd.append("-v")
+        
+        if self.config.get('auth_method') == 'key':
+            scp_cmd.extend(["-i", os.path.expanduser(self.config['key_path'])])
+        
+        scp_cmd.extend(["-P", str(self.config['port'])])
+        scp_cmd.extend(files)
+        scp_cmd.append(f"{self.config['hostname']}:{self.config['remote_dir']}")
+        
+        try:
+            if verbose:
+                print(f"Running: {' '.join(scp_cmd)}")
+            
+            result = subprocess.run(scp_cmd, timeout=60)
+            if result.returncode == 0:
+                print("Files pushed successfully!")
+                return True
+            else:
+                print("Failed to push files.")
+                return False
+        except subprocess.TimeoutExpired:
+            print("File transfer timed out.")
+            return False
+        except Exception as e:
+            print(f"Error pushing files: {e}")
+            return False
 
-# Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+def main():
+    parser = argparse.ArgumentParser(
+        description="SSH File Push Tool - Push files to remote device",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  ssh-push --setup                    # Setup SSH configuration
+  ssh-push --edit                     # Edit existing configuration
+  ssh-push blinky.v                   # Push single file
+  ssh-push file1.v file2.v            # Push multiple files
+  ssh-push --list                     # List remote files
+  ssh-push --test                     # Test SSH connection
+  ssh-push --config                   # Show configuration
+  ssh-push --verbose blinky.v         # Push with verbose output
+        """
+    )
+    
+    parser.add_argument('files', nargs='*', help='Files to push to remote host')
+    parser.add_argument('--setup', '-s', action='store_true', help='Setup SSH configuration')
+    parser.add_argument('--edit', '-e', action='store_true', help='Edit existing SSH configuration')
+    parser.add_argument('--list', '-l', action='store_true', help='List files in remote working directory')
+    parser.add_argument('--test', '-t', action='store_true', help='Test SSH connection')
+    parser.add_argument('--config', '-c', action='store_true', help='Show current configuration')
+    parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
+    parser.add_argument('--version', action='version', version='ssh-push 3.0.0')
+    
+    args = parser.parse_args()
+    
+    tool = SSHPushTool()
+    
+    # Handle different commands
+    if args.setup:
+        tool.setup_config()
+    elif args.edit:
+        tool.edit_config()
+    elif args.list:
+        tool.list_remote_files()
+    elif args.test:
+        tool.test_connection()
+    elif args.config:
+        tool.show_config()
+    elif args.files:
+        tool.push_files(args.files, args.verbose)
+    else:
+        parser.print_help()
 
-# Check if ssh_push.py exists in the same directory
-if [[ -f "$SCRIPT_DIR/ssh_push.py" ]]; then
-    python3 "$SCRIPT_DIR/ssh_push.py" "$@"
-    exit $?
-else
-    echo "Error: Could not find ssh_push.py in $SCRIPT_DIR"
-    echo "Please ensure the SSH Push tool is properly installed."
-    exit 1
-fi
+if __name__ == "__main__":
+    main()
 EOF
-        print_status "Created ssh-push wrapper script"
-    fi
     
-    # Make executable
-    chmod +x "$ssh_push_script"
-    print_success "SSH Push tool installed to $ssh_push_script"
+    # Make the script executable
+    chmod +x "$script_path"
+    print_success "SSH Push script created at $script_path"
     
-    # Copy Python script if it exists
-    if [[ -f "$SCRIPT_DIR/ssh_push.py" ]]; then
-        cp "$SCRIPT_DIR/ssh_push.py" "$install_dir/"
-        print_success "Python script copied to $install_dir/"
-    fi
+    echo "$script_path"
 }
 
 # Function to setup shell alias
 setup_shell_alias() {
+    local script_path="$1"
+    
     print_status "Setting up shell alias..."
     
     # Determine shell configuration file
@@ -432,40 +342,31 @@ setup_shell_alias() {
     fi
     
     # Add new alias
-    local ssh_push_script="$HOME/.local/bin/ssh-push"
     echo "" >> "$shell_rc"
     echo "# SSH Push Tool alias" >> "$shell_rc"
-    echo "alias ssh-push='$ssh_push_script'" >> "$shell_rc"
+    echo "alias ssh-push='$script_path'" >> "$shell_rc"
     
     print_success "SSH Push alias added to $shell_rc"
 }
 
 # Function to verify installation
 verify_installation() {
+    local script_path="$1"
+    
     print_status "Verifying installation..."
     
-    local ssh_push_script="$HOME/.local/bin/ssh-push"
-    
-    if [[ -f "$ssh_push_script" ]]; then
-        print_success "SSH Push tool file exists"
+    if [[ -f "$script_path" ]]; then
+        print_success "SSH Push script exists"
     else
-        print_error "SSH Push tool file NOT found"
-        exit 1
+        print_error "SSH Push script NOT found"
+        return 1
     fi
     
-    if [[ -x "$ssh_push_script" ]]; then
-        print_success "SSH Push tool is executable"
+    if [[ -x "$script_path" ]]; then
+        print_success "SSH Push script is executable"
     else
-        print_error "SSH Push tool is NOT executable"
-        exit 1
-    fi
-    
-    # Check if ~/.local/bin is in PATH
-    if echo "$PATH" | grep -q "$HOME/.local/bin"; then
-        print_success "$HOME/.local/bin is in PATH"
-    else
-        print_warning "$HOME/.local/bin is NOT in PATH"
-        print_status "You may need to restart your terminal or run: source $shell_rc"
+        print_error "SSH Push script is NOT executable"
+        return 1
     fi
     
     # Test if command is accessible
@@ -473,72 +374,41 @@ verify_installation() {
         print_success "ssh-push command is accessible"
     else
         print_warning "ssh-push command is NOT accessible in current session"
-        print_status "Try: source $shell_rc or restart your terminal"
+        print_status "Try: source ~/.bashrc or restart your terminal"
+    fi
+    
+    # Test the script directly
+    if "$script_path" --version &> /dev/null; then
+        print_success "SSH Push script runs correctly"
+    else
+        print_error "SSH Push script failed to run"
+        return 1
     fi
 }
 
-# Function to show help
-show_help() {
-    echo "SSH Push Tool Installation Script"
+# Function to confirm installation
+confirm_installation() {
+    if [[ "$FORCE" == "true" ]]; then
+        return 0
+    fi
+    
+    echo "SSH Push Tool Installation"
+    echo "=========================="
+    echo "This will install SSH Push tool to ~/.local/bin/"
+    echo "and add an alias to your shell configuration."
     echo ""
-    echo "Usage: $0 [OPTIONS]"
-    echo ""
-    echo "Options:"
-    echo "  --help, -h           Show this help message"
-    echo "  --update-only        Check for updates and update components"
-    echo "  --force-update       Force update even if tools are available"
-    echo "  --no-cache           Bypass caching for updates"
-    echo "  --check-updates      Check for available updates"
-    echo ""
-    echo "Installation Options:"
-    echo "  --local              Install from local repository (default)"
-    echo "  --remote             Install from remote repository"
-    echo ""
-    echo "Examples:"
-    echo "  $0                   # Full installation"
-    echo "  $0 --update-only     # Update existing installation"
-    echo "  $0 --check-updates   # Check for updates only"
-    echo ""
-    echo "Recommended one-line installation:"
-    echo "  bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/install.sh)"
-}
-
-# Main installation function
-main_installation() {
-    print_header "SSH Push Tool Installation"
-    print_header "=========================="
     
-    # Detect platform
-    detect_platform
+    read -p "Continue with installation? (y/N): " -n 1 -r
+    echo
     
-    # Check dependencies
-    check_dependencies
-    
-    # Install ssh-push tool
-    install_ssh_push_tool
-    
-    # Setup shell alias
-    setup_shell_alias
-    
-    # Verify installation
-    verify_installation
-    
-    print_header "Installation Complete!"
-    print_success "SSH Push tool has been installed successfully"
-    print_status "You can now use 'ssh-push' command from anywhere"
-    print_status "To get started, run: ssh-push --help"
-    print_status "To setup SSH configuration, run: ssh-push -s"
-    print_status ""
-    print_status "To uninstall later, run:"
-    print_status "  bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/uninstall.sh)"
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        print_status "Installation cancelled"
+        exit 0
+    fi
 }
 
 # Parse command line arguments
-UPDATE_ONLY=false
-FORCE_UPDATE=false
-NO_CACHE=false
-CHECK_UPDATES=false
-LOCAL_INSTALL=true
+FORCE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -546,28 +416,8 @@ while [[ $# -gt 0 ]]; do
             show_help
             exit 0
             ;;
-        --update-only)
-            UPDATE_ONLY=true
-            shift
-            ;;
-        --force-update)
-            FORCE_UPDATE=true
-            shift
-            ;;
-        --no-cache)
-            NO_CACHE=true
-            shift
-            ;;
-        --check-updates)
-            CHECK_UPDATES=true
-            shift
-            ;;
-        --local)
-            LOCAL_INSTALL=true
-            shift
-            ;;
-        --remote)
-            LOCAL_INSTALL=false
+        --force|-f)
+            FORCE=true
             shift
             ;;
         *)
@@ -578,27 +428,33 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Main execution
-if [[ "$CHECK_UPDATES" == "true" ]]; then
-    if check_for_updates; then
-        print_status "Updates are available"
-        exit 0
-    else
-        print_status "No updates available"
-        exit 1
-    fi
-elif [[ "$UPDATE_ONLY" == "true" ]]; then
-    if update_all_components; then
-        print_success "Updates completed successfully"
-    else
-        print_status "No updates were needed"
-    fi
-else
-    # Self-update check (only for remote installations)
-    if [[ "$LOCAL_INSTALL" == "false" ]]; then
-        self_update_script
-    fi
+# Main installation
+main_installation() {
+    # Confirm installation
+    confirm_installation
     
-    # Run main installation
-    main_installation
-fi 
+    # Create the self-contained script
+    local script_path=$(create_ssh_push_script)
+    
+    # Setup shell alias
+    setup_shell_alias "$script_path"
+    
+    # Small delay to ensure file system sync
+    sleep 1
+    
+    # Verify installation
+    verify_installation "$script_path"
+    
+    # Show completion message
+    echo ""
+    print_success "SSH Push tool has been installed successfully!"
+    print_status "You can now use 'ssh-push' command from anywhere"
+    print_status "To get started, run: ssh-push --help"
+    print_status "To setup SSH configuration, run: ssh-push --setup"
+    echo ""
+    print_status "To uninstall later, run:"
+    print_status "  bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/uninstall.sh)"
+}
+
+# Run main installation
+main_installation 

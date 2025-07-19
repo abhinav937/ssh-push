@@ -1,17 +1,15 @@
 # SSH Push Tool
 
-A professional tool for pushing files to remote devices via SSH with a streamlined workflow and comprehensive error handling.
+A simple, self-contained tool for pushing files to remote devices via SSH with a streamlined workflow.
 
 ## Features
 
-- **One-Command Push**: Push files to remote devices with a single command
-- **Cross-Platform Support**: Works on Linux, macOS, FreeBSD, and Windows (WSL)
-- **Flexible Configuration**: Support for custom SSH settings and authentication methods
-- **Easy Installation**: Multiple installation options including one-line curl installation
-- **Automatic Environment Management**: Tool automatically handles SSH configuration
-- **Smart Connection Detection**: Automatic SSH connection testing with clear feedback
-- **Intelligent Error Handling**: User-friendly error messages and helpful suggestions
-- **Project-Specific Configuration**: Different SSH settings for different projects
+- **Self-contained**: Single Python script with no external dependencies
+- **Cross-platform**: Works on Linux, macOS, FreeBSD, and Windows (WSL)
+- **Simple installation**: One-line curl installation
+- **Easy configuration**: Interactive setup process
+- **Project-specific**: Different SSH settings for different projects
+- **No dependencies**: Only requires Python 3 and SSH client
 
 ## Quick Installation
 
@@ -29,75 +27,38 @@ cd ssh-push
 
 ## Quick Uninstallation
 
-### One-Line Uninstallation (with confirmation prompts)
+### One-Line Uninstallation
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/uninstall.sh)
 ```
 
-### One-Line Uninstallation (force removal, no prompts)
+### Force Uninstallation (no prompts)
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/uninstall.sh) -- --force
+bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/uninstall.sh) --force
 ```
-
-## Quick Cleanup
-
-### One-Line Cleanup (with confirmation prompts)
-```bash
-bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/cleanup.sh)
-```
-
-### One-Line Cleanup (force cleanup, no prompts)
-```bash
-bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/cleanup.sh) -- --force
-```
-
-## Installation Options
-
-- **Full Installation**: `./install.sh` (installs SSH Push tool and sets up shell alias)
-- **Update Only**: `./install.sh --update-only` (checks for updates and updates tool)
-- **Force Update**: `./install.sh --force-update` (forces update even if tool is available)
-- **No Cache**: `./install.sh --no-cache` (bypasses caching for updates)
-- **Check Updates**: `./install.sh --check-updates` (check for available updates only)
 
 ## What Gets Installed
 
-- **SSH Push Tool**: `ssh-push` script installed to `~/.local/bin/ssh-push`
-- **Python Script**: `ssh_push.py` installed to `~/.local/bin/ssh_push.py`
-- **Shell Alias**: `ssh-push` command added to your shell configuration
-- **Configuration Management**: Local project-specific SSH configuration
-
-## Environment Setup
-
-The installation script installs the SSH Push tool to `~/.local/bin/` and adds it to your PATH via shell alias. This gives you full control over when the tool is available.
-
-### Manual Environment Sourcing
-If you need to use the tool in a new terminal session without restarting:
-```bash
-source ~/.bashrc  # or ~/.zshrc for zsh users
-```
-
-### Automatic Environment Sourcing
-The `ssh-push` command is automatically available in new terminal sessions after installation.
+- **Single executable**: Self-contained Python script in `~/.local/bin/ssh-push`
+- **Shell alias**: `ssh-push` command added to your shell configuration
+- **No external files**: Everything is contained in one script
 
 ## Usage
 
 After installation, you can use the SSH Push tool from anywhere:
 
 ```bash
-# Basic usage
-ssh-push file1.v file2.v
-
-# With verbose output
-ssh-push file1.v --verbose
-
 # Setup SSH configuration
-ssh-push -s
+ssh-push --setup
 
 # Test SSH connection
-ssh-push -t
+ssh-push --test
+
+# Push files
+ssh-push file1.v file2.v
 
 # List remote files
-ssh-push -l
+ssh-push --list
 
 # Show help
 ssh-push --help
@@ -107,7 +68,7 @@ ssh-push --help
 
 1. **Setup SSH Configuration:**
    ```bash
-   ssh-push -s
+   ssh-push --setup
    ```
    This will prompt you for:
    - Remote hostname/IP (e.g., `pi@192.168.1.100`)
@@ -118,7 +79,7 @@ ssh-push --help
 
 2. **Test Connection:**
    ```bash
-   ssh-push -t
+   ssh-push --test
    ```
 
 3. **Push Files:**
@@ -128,17 +89,17 @@ ssh-push --help
 
 4. **List Remote Files:**
    ```bash
-   ssh-push -l
+   ssh-push --list
    ```
 
 ## Usage Examples
 
 ```bash
 # Setup configuration
-ssh-push -s                    # or ssh-push --setup
+ssh-push --setup
 
 # Edit existing configuration
-ssh-push -e                    # or ssh-push --edit
+ssh-push --edit
 
 # Push single file
 ssh-push blinky.v
@@ -147,16 +108,16 @@ ssh-push blinky.v
 ssh-push top.v clock.v icesugar_nano.pcf
 
 # Push with verbose output
-ssh-push top.v -v              # or ssh-push top.v --verbose
+ssh-push --verbose top.v
 
 # List files on remote
-ssh-push -l                    # or ssh-push --list
+ssh-push --list
 
 # Show current configuration
-ssh-push -c                    # or ssh-push --config
+ssh-push --config
 
 # Test SSH connection
-ssh-push -t                    # or ssh-push --test
+ssh-push --test
 ```
 
 ## Configuration
@@ -203,30 +164,30 @@ For secure authentication, set up SSH keys:
 ### Project-Specific Configuration
 ```bash
 # In project A directory
-ssh-push -s  # Configure for project A
+ssh-push --setup  # Configure for project A
 ssh-push file1.v file2.v
 
 # In project B directory  
-ssh-push -s  # Configure for project B
+ssh-push --setup  # Configure for project B
 ssh-push file3.v file4.v
 ```
 
 ### Verbose Output
 ```bash
 # See detailed transfer information
-ssh-push file.v --verbose
+ssh-push --verbose file.v
 ```
 
 ### Configuration Management
 ```bash
 # Show current configuration
-ssh-push -c
+ssh-push --config
 
 # Edit configuration
-ssh-push -e
+ssh-push --edit
 
 # Test current configuration
-ssh-push -t
+ssh-push --test
 ```
 
 ## Troubleshooting
@@ -295,7 +256,7 @@ ssh-push -t
 bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/uninstall.sh)
 
 # Force removal without prompts
-bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/uninstall.sh) -- --force
+bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/uninstall.sh) --force
 ```
 
 ### Manual Uninstallation
@@ -315,37 +276,6 @@ bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/uninst
 - **Interactive**: `./uninstall.sh` (asks for confirmation)
 - **Force**: `./uninstall.sh --force` (no prompts)
 - **Keep Config**: `./uninstall.sh --keep-config` (keep SSH configuration)
-- **Keep Backups**: `./uninstall.sh --keep-backups` (keep backup files)
-
-## Cleanup
-
-### One-Line Cleanup (Recommended)
-```bash
-# With confirmation prompts
-bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/cleanup.sh)
-
-# Force cleanup without prompts
-bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/cleanup.sh) -- --force
-```
-
-### Manual Cleanup
-```bash
-# Interactive cleanup
-./cleanup.sh
-
-# Force cleanup without prompts
-./cleanup.sh --force
-
-# Cleanup but keep SSH config
-./cleanup.sh --keep-config
-```
-
-### Cleanup Options
-
-- **Interactive**: `./cleanup.sh` (asks for confirmation)
-- **Force**: `./cleanup.sh --force` (no prompts)
-- **Keep Config**: `./cleanup.sh --keep-config` (keep SSH configuration)
-- **Keep Backups**: `./cleanup.sh --keep-backups` (keep backup files)
 
 ## Platform Support
 
