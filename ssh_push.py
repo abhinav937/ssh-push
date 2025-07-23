@@ -346,6 +346,28 @@ def list_remote_files(config: Dict[str, Any]) -> bool:
         logging.error(f"Error listing remote files: {e}")
         return False
 
+def get_all_non_hidden_files() -> List[str]:
+    """Get all non-hidden files in the current directory."""
+    files = []
+    current_dir = os.getcwd()
+    
+    try:
+        for item in os.listdir(current_dir):
+            item_path = os.path.join(current_dir, item)
+            # Skip hidden files (starting with .) and directories
+            if not item.startswith('.') and os.path.isfile(item_path):
+                files.append(item)
+        
+        if not files:
+            logging.warning("No non-hidden files found in current directory.")
+        else:
+            logging.info(f"Found {len(files)} non-hidden files to push.")
+            
+        return files
+    except Exception as e:
+        logging.error(f"Error scanning directory: {e}")
+        return []
+
 def main() -> int:
     """Main function."""
     parser = argparse.ArgumentParser(
@@ -357,6 +379,7 @@ Examples:
   ssh-push -e                         # Edit existing configuration
   ssh-push blinky.v                   # Push single file
   ssh-push file1.v file2.v            # Push multiple files
+  ssh-push --all                      # Push all non-hidden files
   ssh-push -l                         # List remote files
   ssh-push -t                         # Test SSH connection
   ssh-push -c                         # Show configuration
@@ -370,6 +393,8 @@ Examples:
                        help='Setup SSH configuration')
     parser.add_argument('--edit', '-e', action='store_true',
                        help='Edit existing SSH configuration')
+    parser.add_argument('--all', '-a', action='store_true',
+                       help='Push all non-hidden files in current directory')
     parser.add_argument('--list', '-l', action='store_true',
                        help='List files in remote working directory')
     parser.add_argument('--test', '-t', action='store_true',
@@ -424,6 +449,17 @@ Examples:
     elif args.list:
         if list_remote_files(config):
             return 0
+        else:
+            return 1
+    
+    elif args.all:
+        # Push all non-hidden files
+        files_to_push = get_all_non_hidden_files()
+        if files_to_push:
+            if push_files(files_to_push, config, args.verbose):
+                return 0
+            else:
+                return 1
         else:
             return 1
     
