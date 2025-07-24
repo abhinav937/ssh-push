@@ -63,7 +63,7 @@ create_ssh_push_script() {
 #!/usr/bin/env python3
 """
 SSH Push Tool - Self-contained script for pushing files to remote devices
-Version: 3.3.2
+Version: 3.3.3
 """
 
 import os
@@ -538,7 +538,7 @@ Examples:
     parser.add_argument('--speed-test', '-st', action='store_true', help='Test file transfer speed with a test file')
     parser.add_argument('--config', '-c', action='store_true', help='Show current configuration')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    parser.add_argument('--version', action='version', version='ssh-push 3.3.2')
+    parser.add_argument('--version', action='version', version='ssh-push 3.3.3')
     
     args = parser.parse_args()
     
@@ -918,7 +918,7 @@ update_ssh_push() {
     # Get current version and checksum
     local current_version=$(get_current_version)
     local current_checksum=$(get_script_checksum "$script_path")
-    local new_version="3.3.2"
+    local new_version="3.3.3"
     
     echo "Version Information:"
     echo "==================="
