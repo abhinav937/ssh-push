@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SSH Push Tool - Unified Manager Script
-# Version: 3.3.0 - Handles install, uninstall, and update operations
+# Version: 3.3.1 - Handles install, uninstall, and update operations
 
 set -e
 
@@ -63,7 +63,7 @@ create_ssh_push_script() {
 #!/usr/bin/env python3
 """
 SSH Push Tool - Self-contained script for pushing files to remote devices
-Version: 3.3.0
+Version: 3.3.1
 """
 
 import os
@@ -124,20 +124,61 @@ class SSHPushTool:
             ssh_dir = os.path.expanduser("~/.ssh")
             os.makedirs(ssh_dir, mode=0o700, exist_ok=True)
             
-            # Generate SSH key
-            result = subprocess.run([
-                "ssh-keygen", "-t", "rsa", "-b", "4096", 
-                "-f", default_key_path, "-N", ""
-            ], capture_output=True, text=True)
+            # Try different approaches to generate key without passphrase
+            key_generated = False
             
-            if result.returncode == 0:
-                print(f"SSH key generated successfully at {default_key_path}")
+            # Method 1: Use -N "" flag
+            try:
+                result = subprocess.run([
+                    "ssh-keygen", "-t", "rsa", "-b", "4096", 
+                    "-f", default_key_path, "-N", ""
+                ], capture_output=True, text=True, timeout=30)
+                
+                if result.returncode == 0:
+                    key_generated = True
+                    print(f"SSH key generated successfully at {default_key_path}")
+                else:
+                    print(f"Method 1 failed: {result.stderr}")
+            except subprocess.TimeoutExpired:
+                print("Method 1 timed out, trying alternative approach...")
+            except Exception as e:
+                print(f"Method 1 error: {e}")
+            
+            # Method 2: Use expect-like approach with input
+            if not key_generated:
+                try:
+                    result = subprocess.run([
+                        "ssh-keygen", "-t", "rsa", "-b", "4096", 
+                        "-f", default_key_path
+                    ], capture_output=True, text=True, input="\n\n", timeout=30)
+                    
+                    if result.returncode == 0:
+                        key_generated = True
+                        print(f"SSH key generated successfully at {default_key_path}")
+                    else:
+                        print(f"Method 2 failed: {result.stderr}")
+                except subprocess.TimeoutExpired:
+                    print("Method 2 timed out, trying manual approach...")
+                except Exception as e:
+                    print(f"Method 2 error: {e}")
+            
+            # Method 3: Manual approach with instructions
+            if not key_generated:
+                print("Automatic key generation failed. Please generate manually:")
+                print(f"Run: ssh-keygen -t rsa -b 4096 -f {default_key_path}")
+                print("Press Enter twice when prompted for passphrase (empty passphrase)")
+                print("Then run: ssh-push --setup again")
+                return None
+            
+            if key_generated:
                 return default_key_path
             else:
-                print(f"Failed to generate SSH key: {result.stderr}")
                 return None
+                
         except Exception as e:
             print(f"Error generating SSH key: {e}")
+            print("Please generate SSH key manually:")
+            print(f"ssh-keygen -t rsa -b 4096 -f {default_key_path}")
             return None
     
     def copy_ssh_key_to_remote(self, hostname, key_path, port=22):
@@ -145,20 +186,21 @@ class SSHPushTool:
         import subprocess
         
         print(f"Copying SSH key to {hostname}...")
+        print("You may be prompted for your remote machine password.")
         
         try:
-            # Use ssh-copy-id to copy the public key
+            # Use ssh-copy-id to copy the public key (allow interactive input)
             result = subprocess.run([
                 "ssh-copy-id", "-p", str(port), 
                 "-i", f"{key_path}.pub", hostname
-            ], capture_output=True, text=True, timeout=60)
+            ], timeout=30)  # Allow interactive input with reasonable timeout
             
             if result.returncode == 0:
                 print("SSH key copied successfully!")
                 print("Passwordless authentication is now set up.")
                 return True
             else:
-                print(f"Failed to copy SSH key: {result.stderr}")
+                print("Failed to copy SSH key.")
                 print("You may need to manually copy the key or check your connection.")
                 return False
         except subprocess.TimeoutExpired:
@@ -223,7 +265,12 @@ class SSHPushTool:
                     else:
                         print("SSH key not copied. You may need to manually copy it later.")
                 else:
-                    print("SSH key setup failed. You may need to manually generate a key.")
+                    print("SSH key setup failed. You can:")
+                    print("1. Generate key manually: ssh-keygen -t rsa -b 4096")
+                    print("2. Copy key manually: ssh-copy-id " + config['hostname'])
+                    print("3. Continue without key setup (will use password authentication)")
+            else:
+                print("SSH key setup skipped. You can set up keys manually later.")
         
         if self.save_config(config):
             print("Configuration setup complete!")
@@ -517,7 +564,7 @@ Examples:
     parser.add_argument('--speed-test', '-st', action='store_true', help='Test file transfer speed with a test file')
     parser.add_argument('--config', '-c', action='store_true', help='Show current configuration')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    parser.add_argument('--version', action='version', version='ssh-push 3.3.0')
+    parser.add_argument('--version', action='version', version='ssh-push 3.3.1')
     
     args = parser.parse_args()
     

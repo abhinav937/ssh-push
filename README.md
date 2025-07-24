@@ -142,6 +142,10 @@ bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-pu
 
 ## Version History
 
+### Version 3.3.1
+- Fixed SSH key copying to allow password input
+- Improved interactive SSH key setup process
+
 ### Version 3.3.0
 - Automatic SSH key setup
 - Passwordless authentication
