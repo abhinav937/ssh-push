@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SSH Push Tool - Unified Manager Script
-# Version: 3.1.0 - Handles install, uninstall, and update operations
+# Version: 3.2.0 - Handles install, uninstall, and update operations
 
 set -e
 
@@ -63,7 +63,7 @@ create_ssh_push_script() {
 #!/usr/bin/env python3
 """
 SSH Push Tool - Self-contained script for pushing files to remote devices
-Version: 3.1.0
+Version: 3.2.0
 """
 
 import os
@@ -297,6 +297,109 @@ class SSHPushTool:
         except Exception as e:
             print(f"Error scanning directory: {e}")
             return []
+    
+    def speed_test(self, file_size_mb=10):
+        """Test file transfer speed by creating a test file and measuring transfer time"""
+        if not self.config:
+            print("No configuration found. Run setup first.")
+            return False
+        
+        import tempfile
+        import time
+        import os
+        
+        print(f"Running speed test with {file_size_mb}MB test file...")
+        
+        # Create a temporary test file
+        test_file = None
+        try:
+            # Create a temporary file with random data
+            test_file = tempfile.NamedTemporaryFile(delete=False, suffix='.test')
+            test_file_path = test_file.name
+            
+            # Generate random data (approximately file_size_mb MB)
+            import random
+            import string
+            
+            # Write data in chunks to avoid memory issues
+            chunk_size = 1024 * 1024  # 1MB chunks
+            total_bytes = file_size_mb * 1024 * 1024
+            bytes_written = 0
+            
+            while bytes_written < total_bytes:
+                chunk = ''.join(random.choices(string.ascii_letters + string.digits, k=min(chunk_size, total_bytes - bytes_written)))
+                test_file.write(chunk.encode())
+                bytes_written += len(chunk)
+            
+            test_file.close()
+            
+            # Get file size for accurate measurement
+            actual_size = os.path.getsize(test_file_path)
+            actual_size_mb = actual_size / (1024 * 1024)
+            
+            print(f"Created test file: {test_file_path} ({actual_size_mb:.2f} MB)")
+            
+            # Build SCP command for speed test
+            scp_cmd = ["scp"]
+            
+            if self.config.get('auth_method') == 'key':
+                scp_cmd.extend(["-i", os.path.expanduser(self.config['key_path'])])
+            
+            scp_cmd.extend(["-P", str(self.config['port'])])
+            scp_cmd.append(test_file_path)
+            scp_cmd.append(f"{self.config['hostname']}:{self.config['remote_dir']}/speed_test.tmp")
+            
+            print("Starting file transfer speed test...")
+            start_time = time.time()
+            
+            try:
+                result = subprocess.run(scp_cmd, capture_output=True, text=True, timeout=300)
+                end_time = time.time()
+                
+                if result.returncode == 0:
+                    transfer_time = end_time - start_time
+                    speed_mbps = (actual_size_mb * 8) / transfer_time  # Convert to Mbps
+                    speed_mb_per_sec = actual_size_mb / transfer_time
+                    
+                    print("Speed Test Results:")
+                    print("==================")
+                    print(f"File size: {actual_size_mb:.2f} MB")
+                    print(f"Transfer time: {transfer_time:.2f} seconds")
+                    print(f"Transfer speed: {speed_mb_per_sec:.2f} MB/s")
+                    print(f"Transfer speed: {speed_mbps:.2f} Mbps")
+                    
+                    # Clean up remote test file
+                    cleanup_cmd = ["ssh"]
+                    if self.config.get('auth_method') == 'key':
+                        cleanup_cmd.extend(["-i", os.path.expanduser(self.config['key_path'])])
+                    cleanup_cmd.extend(["-p", str(self.config['port'])])
+                    cleanup_cmd.append(self.config['hostname'])
+                    cleanup_cmd.append(f"rm -f {self.config['remote_dir']}/speed_test.tmp")
+                    
+                    subprocess.run(cleanup_cmd, capture_output=True, timeout=10)
+                    
+                    return True
+                else:
+                    print(f"Speed test failed: {result.stderr}")
+                    return False
+                    
+            except subprocess.TimeoutExpired:
+                print("Speed test timed out after 5 minutes.")
+                return False
+            except Exception as e:
+                print(f"Speed test error: {e}")
+                return False
+                
+        except Exception as e:
+            print(f"Error creating test file: {e}")
+            return False
+        finally:
+            # Clean up local test file
+            if test_file and os.path.exists(test_file_path):
+                try:
+                    os.unlink(test_file_path)
+                except:
+                    pass
 
 def main():
     parser = argparse.ArgumentParser(
@@ -311,6 +414,8 @@ Examples:
   ssh-push --all                      # Push all non-hidden files
   ssh-push --list                     # List remote files
   ssh-push --test                     # Test SSH connection
+  ssh-push --speed-test               # Test file transfer speed
+  ssh-push -st                        # Test file transfer speed (short)
   ssh-push --config                   # Show configuration
   ssh-push --verbose blinky.v         # Push with verbose output
         """
@@ -322,9 +427,10 @@ Examples:
     parser.add_argument('--all', '-a', action='store_true', help='Push all non-hidden files in current directory')
     parser.add_argument('--list', '-l', action='store_true', help='List files in remote working directory')
     parser.add_argument('--test', '-t', action='store_true', help='Test SSH connection')
+    parser.add_argument('--speed-test', '-st', action='store_true', help='Test file transfer speed with a test file')
     parser.add_argument('--config', '-c', action='store_true', help='Show current configuration')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    parser.add_argument('--version', action='version', version='ssh-push 3.1.0')
+    parser.add_argument('--version', action='version', version='ssh-push 3.2.0')
     
     args = parser.parse_args()
     
@@ -344,6 +450,8 @@ Examples:
         tool.list_remote_files()
     elif args.test:
         tool.test_connection()
+    elif args.speed_test:
+        tool.speed_test()
     elif args.config:
         tool.show_config()
     elif args.files:
