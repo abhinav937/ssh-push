@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SSH Push Tool - Unified Manager Script
-# Version: 3.2.0 - Handles install, uninstall, and update operations
+# Version: 3.3.0 - Handles install, uninstall, and update operations
 
 set -e
 
@@ -63,7 +63,7 @@ create_ssh_push_script() {
 #!/usr/bin/env python3
 """
 SSH Push Tool - Self-contained script for pushing files to remote devices
-Version: 3.2.0
+Version: 3.3.0
 """
 
 import os
@@ -100,6 +100,74 @@ class SSHPushTool:
             print(f"Error saving configuration: {e}")
             return False
     
+    def setup_ssh_key(self, hostname, port=22):
+        """Setup SSH key for passwordless authentication"""
+        import os
+        import subprocess
+        
+        print("Setting up SSH key for passwordless authentication...")
+        
+        # Check if SSH key already exists
+        default_key_path = os.path.expanduser("~/.ssh/id_rsa")
+        if os.path.exists(default_key_path):
+            print(f"SSH key found at {default_key_path}")
+            use_existing = input("Use existing key? (Y/n): ").strip().lower()
+            if use_existing in ['', 'y', 'yes']:
+                return default_key_path
+            else:
+                print("Will generate a new key.")
+        
+        # Generate new SSH key
+        print("Generating new SSH key...")
+        try:
+            # Create .ssh directory if it doesn't exist
+            ssh_dir = os.path.expanduser("~/.ssh")
+            os.makedirs(ssh_dir, mode=0o700, exist_ok=True)
+            
+            # Generate SSH key
+            result = subprocess.run([
+                "ssh-keygen", "-t", "rsa", "-b", "4096", 
+                "-f", default_key_path, "-N", ""
+            ], capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                print(f"SSH key generated successfully at {default_key_path}")
+                return default_key_path
+            else:
+                print(f"Failed to generate SSH key: {result.stderr}")
+                return None
+        except Exception as e:
+            print(f"Error generating SSH key: {e}")
+            return None
+    
+    def copy_ssh_key_to_remote(self, hostname, key_path, port=22):
+        """Copy SSH public key to remote machine"""
+        import subprocess
+        
+        print(f"Copying SSH key to {hostname}...")
+        
+        try:
+            # Use ssh-copy-id to copy the public key
+            result = subprocess.run([
+                "ssh-copy-id", "-p", str(port), 
+                "-i", f"{key_path}.pub", hostname
+            ], capture_output=True, text=True, timeout=60)
+            
+            if result.returncode == 0:
+                print("SSH key copied successfully!")
+                print("Passwordless authentication is now set up.")
+                return True
+            else:
+                print(f"Failed to copy SSH key: {result.stderr}")
+                print("You may need to manually copy the key or check your connection.")
+                return False
+        except subprocess.TimeoutExpired:
+            print("SSH key copy timed out.")
+            return False
+        except Exception as e:
+            print(f"Error copying SSH key: {e}")
+            return False
+    
     def setup_config(self):
         """Interactive setup of SSH configuration"""
         print("SSH Push Tool Configuration Setup")
@@ -133,10 +201,29 @@ class SSHPushTool:
                 break
             print("Please choose 'key' or 'password'.")
         
-        # SSH key path (if using key authentication)
+        # SSH key setup for key authentication
         if auth_method == "key":
             key_path = input("SSH key path (default: ~/.ssh/id_rsa): ").strip()
             config['key_path'] = key_path if key_path else "~/.ssh/id_rsa"
+            
+            # Offer to setup SSH key automatically
+            setup_key = input("Setup SSH key for passwordless authentication? (Y/n): ").strip().lower()
+            if setup_key in ['', 'y', 'yes']:
+                key_path = self.setup_ssh_key(config['hostname'], config['port'])
+                if key_path:
+                    config['key_path'] = key_path
+                    
+                    # Copy key to remote machine
+                    copy_key = input("Copy SSH key to remote machine? (Y/n): ").strip().lower()
+                    if copy_key in ['', 'y', 'yes']:
+                        if self.copy_ssh_key_to_remote(config['hostname'], key_path, config['port']):
+                            print("SSH key setup complete!")
+                        else:
+                            print("SSH key copy failed. You may need to manually copy the key.")
+                    else:
+                        print("SSH key not copied. You may need to manually copy it later.")
+                else:
+                    print("SSH key setup failed. You may need to manually generate a key.")
         
         if self.save_config(config):
             print("Configuration setup complete!")
@@ -430,7 +517,7 @@ Examples:
     parser.add_argument('--speed-test', '-st', action='store_true', help='Test file transfer speed with a test file')
     parser.add_argument('--config', '-c', action='store_true', help='Show current configuration')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    parser.add_argument('--version', action='version', version='ssh-push 3.2.0')
+    parser.add_argument('--version', action='version', version='ssh-push 3.3.0')
     
     args = parser.parse_args()
     
