@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SSH Push Tool - Unified Manager Script
-# Version: 3.3.4 - Handles install, uninstall, and update operations
+# Version: 3.3.5 - Handles install, uninstall, and update operations
 
 set -e
 
@@ -48,22 +48,13 @@ show_help() {
     echo "  bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) uninstall"
 }
 
-# Function to create the self-contained ssh-push script
-create_ssh_push_script() {
-    local install_dir="$HOME/.local/bin"
-    local script_path="$install_dir/ssh-push"
-    
-    print_status "Creating self-contained SSH Push script..." >&2
-    
-    # Create the installation directory
-    mkdir -p "$install_dir"
-    
-    # Create the self-contained script
-    if ! cat > "$script_path" << 'EOF'
+# Function to output the ssh-push script content
+output_ssh_push_script() {
+    cat << 'EOF'
 #!/usr/bin/env python3
 """
 SSH Push Tool - Self-contained script for pushing files to remote devices
-Version: 3.3.4
+Version: 3.3.5
 """
 
 import os
@@ -538,7 +529,7 @@ Examples:
     parser.add_argument('--speed-test', '-st', action='store_true', help='Test file transfer speed with a test file')
     parser.add_argument('--config', '-c', action='store_true', help='Show current configuration')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    parser.add_argument('--version', action='version', version='ssh-push 3.3.4')
+    parser.add_argument('--version', action='version', version='ssh-push 3.3.5')
     
     args = parser.parse_args()
     
@@ -571,6 +562,39 @@ if __name__ == "__main__":
     main()
 EOF
     then
+        print_error "Failed to create SSH Push script"
+        return 1
+    fi
+    
+    # Make the script executable
+    if ! chmod +x "$script_path"; then
+        print_error "Failed to make SSH Push script executable"
+        return 1
+    fi
+    
+    # Verify the script was created successfully
+    if [[ ! -f "$script_path" ]] || [[ ! -x "$script_path" ]]; then
+        print_error "Failed to create executable script at $script_path"
+        return 1
+    fi
+    
+    print_success "SSH Push script created at $script_path" >&2
+    
+    echo "$script_path"
+}
+
+# Function to create the self-contained ssh-push script
+create_ssh_push_script() {
+    local install_dir="$HOME/.local/bin"
+    local script_path="$install_dir/ssh-push"
+    
+    print_status "Creating self-contained SSH Push script..." >&2
+    
+    # Create the installation directory
+    mkdir -p "$install_dir"
+    
+    # Create the self-contained script
+    if ! output_ssh_push_script > "$script_path"; then
         print_error "Failed to create SSH Push script"
         return 1
     fi
@@ -810,7 +834,7 @@ confirm_operation() {
             # Get current version for update
             local script_path="$HOME/.local/bin/ssh-push"
             local current_version="not installed"
-            local new_version="3.3.4"
+            local new_version="3.3.5"
             
             if [[ -f "$script_path" ]]; then
                 current_version=$(grep -o "version='ssh-push [0-9]\+\.[0-9]\+\.[0-9]\+'" "$script_path" 2>/dev/null | grep -o "[0-9]\+\.[0-9]\+\.[0-9]\+" | head -1)
@@ -837,7 +861,7 @@ confirm_operation() {
                 
                 # Create temporary new script to compare
                 local temp_script=$(mktemp)
-                create_ssh_push_script > "$temp_script" 2>/dev/null
+                output_ssh_push_script > "$temp_script" 2>/dev/null
                 local new_checksum=$(get_script_checksum "$temp_script")
                 local new_size=$(stat -c%s "$temp_script" 2>/dev/null || echo "unknown")
                 rm -f "$temp_script"
@@ -971,7 +995,7 @@ update_ssh_push() {
     
     # For same version updates, checksum comparison is already done in confirm_operation
     local current_version=$(get_current_version)
-    local new_version="3.3.4"
+    local new_version="3.3.5"
     
     if [[ "$current_version" == "$new_version" ]]; then
         # If we reach here, user chose to update anyway or code changed

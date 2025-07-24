@@ -142,6 +142,11 @@ bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-pu
 
 ## Version History
 
+### Version 3.3.5
+- Fixed checksum comparison for same-version updates
+- Corrected script content output for accurate file comparison
+- Improved update detection reliability
+
 ### Version 3.3.4
 - Enhanced same-version update detection with checksum comparison
 - Shows detailed file comparison before update confirmation
