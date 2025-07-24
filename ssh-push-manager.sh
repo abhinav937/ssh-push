@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SSH Push Tool - Unified Manager Script
-# Version: 3.3.1 - Handles install, uninstall, and update operations
+# Version: 3.3.2 - Handles install, uninstall, and update operations
 
 set -e
 
@@ -63,7 +63,7 @@ create_ssh_push_script() {
 #!/usr/bin/env python3
 """
 SSH Push Tool - Self-contained script for pushing files to remote devices
-Version: 3.3.1
+Version: 3.3.2
 """
 
 import os
@@ -105,17 +105,17 @@ class SSHPushTool:
         import os
         import subprocess
         
-        print("Setting up SSH key for passwordless authentication...")
+        print("Setting up SSH key...")
         
         # Check if SSH key already exists
         default_key_path = os.path.expanduser("~/.ssh/id_rsa")
         if os.path.exists(default_key_path):
-            print(f"SSH key found at {default_key_path}")
+            print(f"Found existing key at {default_key_path}")
             use_existing = input("Use existing key? (Y/n): ").strip().lower()
             if use_existing in ['', 'y', 'yes']:
                 return default_key_path
             else:
-                print("Will generate a new key.")
+                print("Generating new key...")
         
         # Generate new SSH key
         print("Generating new SSH key...")
@@ -124,8 +124,7 @@ class SSHPushTool:
             ssh_dir = os.path.expanduser("~/.ssh")
             os.makedirs(ssh_dir, mode=0o700, exist_ok=True)
             
-            # Interactive key generation with proper input handling
-            print("Generating new SSH key...")
+            # Generate new SSH key
             
             try:
                 # Check if key already exists and remove it first
@@ -140,16 +139,16 @@ class SSHPushTool:
                 ], capture_output=True, text=True, timeout=30)
                 
                 if result.returncode == 0:
-                    print(f"SSH key generated successfully at {default_key_path}")
+                    print(f"Key generated at {default_key_path}")
                     return default_key_path
                 else:
-                    print(f"Failed to generate SSH key: {result.stderr}")
+                    print(f"Failed to generate key: {result.stderr}")
                     return None
             except subprocess.TimeoutExpired:
-                print("SSH key generation timed out.")
+                print("Key generation timed out.")
                 return None
             except Exception as e:
-                print(f"Error generating SSH key: {e}")
+                print(f"Error generating key: {e}")
                 return None
                 
         except Exception as e:
@@ -162,8 +161,8 @@ class SSHPushTool:
         """Copy SSH public key to remote machine"""
         import subprocess
         
-        print(f"Copying SSH key to {hostname}...")
-        print("You may be prompted for your remote machine password.")
+        print(f"Copying key to {hostname}...")
+        print("Enter your remote machine password when prompted.")
         
         try:
             # Use ssh-copy-id to copy the public key (allow interactive input)
@@ -173,18 +172,18 @@ class SSHPushTool:
             ], timeout=30)  # Allow interactive input with reasonable timeout
             
             if result.returncode == 0:
-                print("SSH key copied successfully!")
-                print("Passwordless authentication is now set up.")
+                print("Key copied successfully!")
+                print("Passwordless authentication ready.")
                 return True
             else:
-                print("Failed to copy SSH key.")
-                print("You may need to manually copy the key or check your connection.")
+                print("Failed to copy key.")
+                print("You may need to copy manually or check connection.")
                 return False
         except subprocess.TimeoutExpired:
-            print("SSH key copy timed out.")
+            print("Key copy timed out.")
             return False
         except Exception as e:
-            print(f"Error copying SSH key: {e}")
+            print(f"Error copying key: {e}")
             return False
     
     def setup_config(self):
@@ -235,19 +234,19 @@ class SSHPushTool:
                     # Copy key to remote machine
                     copy_key = input("Copy SSH key to remote machine? (Y/n): ").strip().lower()
                     if copy_key in ['', 'y', 'yes']:
-                        if self.copy_ssh_key_to_remote(config['hostname'], key_path, config['port']):
-                            print("SSH key setup complete!")
-                        else:
-                            print("SSH key copy failed. You may need to manually copy the key.")
+                                            if self.copy_ssh_key_to_remote(config['hostname'], key_path, config['port']):
+                        print("Key setup complete!")
                     else:
-                        print("SSH key not copied. You may need to manually copy it later.")
+                        print("Key copy failed. You may need to copy manually.")
+                    else:
+                        print("Key not copied. You may need to copy manually later.")
                 else:
-                    print("SSH key setup failed. You can:")
+                    print("Key setup failed. You can:")
                     print("1. Generate key manually: ssh-keygen -t rsa -b 4096")
                     print("2. Copy key manually: ssh-copy-id " + config['hostname'])
                     print("3. Continue without key setup (will use password authentication)")
             else:
-                print("SSH key setup skipped. You can set up keys manually later.")
+                print("Key setup skipped. You can set up keys manually later.")
         
         if self.save_config(config):
             print("Configuration setup complete!")
@@ -541,7 +540,7 @@ Examples:
     parser.add_argument('--speed-test', '-st', action='store_true', help='Test file transfer speed with a test file')
     parser.add_argument('--config', '-c', action='store_true', help='Show current configuration')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    parser.add_argument('--version', action='version', version='ssh-push 3.3.1')
+    parser.add_argument('--version', action='version', version='ssh-push 3.3.2')
     
     args = parser.parse_args()
     
@@ -743,6 +742,20 @@ check_installation_status() {
         print_warning "✗ SSH Push script is not executable"
     fi
     
+    # Check current version
+    local current_version=$(get_current_version)
+    if [[ "$current_version" != "not installed" ]]; then
+        print_success "✓ Current version: $current_version"
+        
+        # Show checksum for verification
+        local current_checksum=$(get_script_checksum "$script_path")
+        if [[ -n "$current_checksum" ]]; then
+            print_status "  Checksum: ${current_checksum:0:16}..."
+        fi
+    else
+        print_warning "✗ Version: $current_version"
+    fi
+    
     # Check if alias exists
     if [[ -f "$shell_rc" ]] && grep -q "alias ssh-push=" "$shell_rc"; then
         print_success "✓ SSH Push alias found in: $shell_rc"
@@ -865,6 +878,33 @@ uninstall_ssh_push() {
     print_status "Note: You may need to restart your terminal for all changes to take effect"
 }
 
+# Function to get current version
+get_current_version() {
+    local script_path="$HOME/.local/bin/ssh-push"
+    if [[ -f "$script_path" ]]; then
+        # Extract version from the script
+        local version=$(grep -o "version='ssh-push [0-9]\+\.[0-9]\+\.[0-9]\+'" "$script_path" 2>/dev/null | grep -o "[0-9]\+\.[0-9]\+\.[0-9]\+" | head -1)
+        if [[ -n "$version" ]]; then
+            echo "$version"
+        else
+            echo "unknown"
+        fi
+    else
+        echo "not installed"
+    fi
+}
+
+# Function to get script checksum
+get_script_checksum() {
+    local script_path="$1"
+    if [[ -f "$script_path" ]]; then
+        # Get SHA256 checksum of the script content
+        sha256sum "$script_path" 2>/dev/null | cut -d' ' -f1
+    else
+        echo ""
+    fi
+}
+
 # Function to update SSH Push tool
 update_ssh_push() {
     print_status "Updating SSH Push tool..."
@@ -876,6 +916,38 @@ update_ssh_push() {
         install_ssh_push
         return
     fi
+    
+    # Get current version and checksum
+    local current_version=$(get_current_version)
+    local current_checksum=$(get_script_checksum "$script_path")
+    local new_version="3.3.2"
+    
+    echo "Version Information:"
+    echo "==================="
+    echo "Current version: $current_version"
+    echo "New version:     $new_version"
+    
+    # Check if code has changed (even with same version)
+    if [[ "$current_version" == "$new_version" ]]; then
+        echo ""
+        print_status "Same version detected. Checking for code changes..."
+        
+        # Create temporary new script to compare checksums
+        local temp_script=$(mktemp)
+        create_ssh_push_script > "$temp_script" 2>/dev/null
+        local new_checksum=$(get_script_checksum "$temp_script")
+        rm -f "$temp_script"
+        
+        if [[ "$current_checksum" != "$new_checksum" ]]; then
+            print_warning "Code has changed despite same version number!"
+            print_status "Updating to latest code..."
+        else
+            print_success "Already up to date (same version and code)"
+            return 0
+        fi
+    fi
+    
+    echo ""
     
     # Create the updated self-contained script
     local new_script_path=$(create_ssh_push_script)

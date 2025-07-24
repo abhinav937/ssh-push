@@ -142,6 +142,11 @@ bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-pu
 
 ## Version History
 
+### Version 3.3.2
+- Fixed SSH key generation to handle existing keys properly
+- Improved text messages and user feedback
+- Streamlined SSH key setup process
+
 ### Version 3.3.1
 - Fixed SSH key copying to allow password input
 - Improved interactive SSH key setup process
