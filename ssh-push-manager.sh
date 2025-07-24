@@ -53,7 +53,7 @@ create_ssh_push_script() {
     local install_dir="$HOME/.local/bin"
     local script_path="$install_dir/ssh-push"
     
-    print_status "Creating self-contained SSH Push script..."
+    print_status "Creating self-contained SSH Push script..." >&2
     
     # Create the installation directory
     mkdir -p "$install_dir"
@@ -371,7 +371,7 @@ EOF
         return 1
     fi
     
-    print_success "SSH Push script created at $script_path"
+    print_success "SSH Push script created at $script_path" >&2
     
     echo "$script_path"
 }
@@ -380,7 +380,7 @@ EOF
 setup_shell_alias() {
     local script_path="$1"
     
-    print_status "Setting up shell alias..."
+    print_status "Setting up shell alias..." >&2
     
     # Determine shell configuration file
     local shell_rc=""
@@ -394,13 +394,7 @@ setup_shell_alias() {
     if grep -q "alias ssh-push=" "$shell_rc" 2>/dev/null; then
         sed -i.bak '/# SSH Push Tool alias/d' "$shell_rc"
         sed -i.bak '/alias ssh-push=/d' "$shell_rc"
-        print_status "Removed existing ssh-push alias"
-    fi
-    
-    # Validate script path exists
-    if [[ ! -f "$script_path" ]]; then
-        print_error "Script path does not exist: $script_path"
-        return 1
+        print_status "Removed existing ssh-push alias" >&2
     fi
     
     # Add new alias with proper quoting
@@ -408,7 +402,7 @@ setup_shell_alias() {
     echo "# SSH Push Tool alias" >> "$shell_rc"
     echo "alias ssh-push=\"$script_path\"" >> "$shell_rc"
     
-    print_success "SSH Push alias added to $shell_rc"
+    print_success "SSH Push alias added to $shell_rc" >&2
 }
 
 # Function to remove SSH Push tool
