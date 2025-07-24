@@ -10,31 +10,76 @@ A simple, self-contained tool for pushing files to remote devices via SSH with a
 - **Easy configuration**: Interactive setup process
 - **Project-specific**: Different SSH settings for different projects
 - **No dependencies**: Only requires Python 3 and SSH client
+- **Unified management**: Single script handles install, update, and uninstall
 
 ## Quick Installation
 
 ### One-Line Installation (Recommended)
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/install.sh)
+bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) install
 ```
 
 ### Alternative: Clone and Install
 ```bash
 git clone https://github.com/abhinav937/ssh-push.git
 cd ssh-push
-./install.sh
+./ssh-push-manager.sh install
+```
+
+## Quick Update
+
+### One-Line Update
+```bash
+bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) update
 ```
 
 ## Quick Uninstallation
 
 ### One-Line Uninstallation
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/uninstall.sh)
+bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) uninstall
 ```
 
 ### Force Uninstallation (no prompts)
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/uninstall.sh) --force
+bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) uninstall --force
+```
+
+## Unified Management Script
+
+The `ssh-push-manager.sh` script provides all management operations:
+
+```bash
+# Install
+ssh-push-manager.sh install
+
+# Update
+ssh-push-manager.sh update
+
+# Uninstall
+ssh-push-manager.sh uninstall
+
+# Check status
+ssh-push-manager.sh status
+
+# Show help
+ssh-push-manager.sh help
+```
+
+### One-Line Commands
+
+```bash
+# Install
+bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) install
+
+# Update
+bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) update
+
+# Uninstall
+bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) uninstall
+
+# Check status
+bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) status
 ```
 
 ## What Gets Installed
@@ -238,12 +283,17 @@ ssh-push --test
    which ssh-push
    ```
 
-2. **Reinstall if needed:**
+2. **Check installation status:**
    ```bash
-   bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/install.sh)
+   bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) status
    ```
 
-3. **Check shell configuration:**
+3. **Reinstall if needed:**
+   ```bash
+   bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) install
+   ```
+
+4. **Check shell configuration:**
    ```bash
    grep "ssh-push" ~/.bashrc
    ```
@@ -253,29 +303,32 @@ ssh-push --test
 ### One-Line Uninstallation (Recommended)
 ```bash
 # With confirmation prompts
-bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/uninstall.sh)
+bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) uninstall
 
 # Force removal without prompts
-bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/uninstall.sh) --force
+bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) uninstall --force
+
+# Remove tool but keep configuration
+bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) uninstall --keep-config
 ```
 
 ### Manual Uninstallation
 ```bash
 # Remove everything (with confirmation)
-./uninstall.sh
+./ssh-push-manager.sh uninstall
 
 # Remove everything without confirmation
-./uninstall.sh --force
+./ssh-push-manager.sh uninstall --force
 
 # Remove tool but keep configuration
-./uninstall.sh --keep-config
+./ssh-push-manager.sh uninstall --keep-config
 ```
 
 ### Uninstallation Options
 
-- **Interactive**: `./uninstall.sh` (asks for confirmation)
-- **Force**: `./uninstall.sh --force` (no prompts)
-- **Keep Config**: `./uninstall.sh --keep-config` (keep SSH configuration)
+- **Interactive**: `./ssh-push-manager.sh uninstall` (asks for confirmation)
+- **Force**: `./ssh-push-manager.sh uninstall --force` (no prompts)
+- **Keep Config**: `./ssh-push-manager.sh uninstall --keep-config` (keep SSH configuration)
 
 ## Platform Support
 

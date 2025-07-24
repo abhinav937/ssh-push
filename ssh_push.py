@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import getpass
 
-VERSION = "1.1.0"
+VERSION = "3.0.1"
 CONFIG_FILE = ".ssh_push_config.json"  # Local to current directory
 
 def setup_logging(verbose: bool = False) -> None:
