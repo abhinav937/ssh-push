@@ -561,10 +561,6 @@ Examples:
 if __name__ == "__main__":
     main()
 EOF
-    then
-        print_error "Failed to create SSH Push script"
-        return 1
-    fi
     
     # Make the script executable
     if ! chmod +x "$script_path"; then
