@@ -534,7 +534,7 @@ check_installation_status() {
     if [[ -f "$shell_rc" ]] && grep -q "alias ssh-push=" "$shell_rc"; then
         print_success "✓ SSH Push alias found in: $shell_rc"
     else
-        print_warning "✗ SSH Push alias not found in: $shell_rc"
+        print_status "ℹ SSH Push alias not found in: $shell_rc (not required if binary is in PATH)"
     fi
     
     # Check if command is accessible
