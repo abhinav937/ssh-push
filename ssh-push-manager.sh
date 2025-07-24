@@ -792,30 +792,43 @@ confirm_operation() {
         return 0
     fi
     
-    echo "SSH Push Tool - $operation"
-    echo "=========================="
-    
     case "$operation" in
         "Install")
-            echo "This will install SSH Push tool to ~/.local/bin/"
-            echo "and add an alias to your shell configuration."
+            echo "SSH Push Tool - Install"
+            echo "======================="
+            echo "Install to ~/.local/bin/ and add shell alias"
             ;;
         "Uninstall")
-            echo "This will remove the SSH Push tool and all its components:"
-            echo "  • SSH Push tool executable"
-            echo "  • Shell alias"
+            echo "SSH Push Tool - Uninstall"
+            echo "========================="
+            echo "Remove tool, alias"
             if [[ "$KEEP_CONFIG" != "true" ]]; then
-                echo "  • SSH configuration files"
+                echo "Remove configuration files"
             fi
             ;;
         "Update")
-            echo "This will update the SSH Push tool to the latest version."
-            echo "Your existing configuration will be preserved."
+            # Get current version for update
+            local script_path="$HOME/.local/bin/ssh-push"
+            local current_version="not installed"
+            local new_version="3.3.3"
+            
+            if [[ -f "$script_path" ]]; then
+                current_version=$(grep -o "version='ssh-push [0-9]\+\.[0-9]\+\.[0-9]\+'" "$script_path" 2>/dev/null | grep -o "[0-9]\+\.[0-9]\+\.[0-9]\+" | head -1)
+                if [[ -z "$current_version" ]]; then
+                    current_version="unknown"
+                fi
+            fi
+            
+            echo "SSH Push Tool - Update"
+            echo "======================"
+            echo "Current: $current_version"
+            echo "New:     $new_version"
+            echo "Configuration will be preserved"
             ;;
     esac
     
     echo ""
-    read -p "Continue with $operation? (y/N): " -n 1 -r
+    read -p "Continue? (y/N): " -n 1 -r
     echo
     
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -915,20 +928,13 @@ update_ssh_push() {
         return
     fi
     
-    # Get current version and checksum
+    # Check if code has changed (even with same version)
     local current_version=$(get_current_version)
     local current_checksum=$(get_script_checksum "$script_path")
     local new_version="3.3.3"
     
-    echo "Version Information:"
-    echo "==================="
-    echo "Current version: $current_version"
-    echo "New version:     $new_version"
-    
-    # Check if code has changed (even with same version)
     if [[ "$current_version" == "$new_version" ]]; then
-        echo ""
-        print_status "Same version detected. Checking for code changes..."
+        print_status "Checking for code changes..."
         
         # Create temporary new script to compare checksums
         local temp_script=$(mktemp)
@@ -937,15 +943,12 @@ update_ssh_push() {
         rm -f "$temp_script"
         
         if [[ "$current_checksum" != "$new_checksum" ]]; then
-            print_warning "Code has changed despite same version number!"
-            print_status "Updating to latest code..."
+            print_warning "Code changed - updating..."
         else
-            print_success "Already up to date (same version and code)"
+            print_success "Already up to date"
             return 0
         fi
     fi
-    
-    echo ""
     
     # Create the updated self-contained script
     local new_script_path=$(create_ssh_push_script)
