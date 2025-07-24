@@ -847,7 +847,7 @@ install_ssh_push() {
     print_status "  bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-push-manager.sh) update"
 }
 
-# Function to uninstall SSH Push tool
+# function to uninstall SSH Push tool
 uninstall_ssh_push() {
     print_status "Uninstalling SSH Push tool..."
     
