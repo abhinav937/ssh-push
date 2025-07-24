@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SSH Push Tool - Unified Manager Script
-# Version: 3.3.5 - Handles install, uninstall, and update operations
+# Version: 3.3.6 - Handles install, uninstall, and update operations
 
 set -e
 
@@ -54,7 +54,7 @@ output_ssh_push_script() {
 #!/usr/bin/env python3
 """
 SSH Push Tool - Self-contained script for pushing files to remote devices
-Version: 3.3.5
+Version: 3.3.6
 """
 
 import os
@@ -529,7 +529,7 @@ Examples:
     parser.add_argument('--speed-test', '-st', action='store_true', help='Test file transfer speed with a test file')
     parser.add_argument('--config', '-c', action='store_true', help='Show current configuration')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    parser.add_argument('--version', action='version', version='ssh-push 3.3.5')
+    parser.add_argument('--version', action='version', version='ssh-push 3.3.6')
     
     args = parser.parse_args()
     
@@ -828,7 +828,7 @@ confirm_operation() {
             # Get current version for update
             local script_path="$HOME/.local/bin/ssh-push"
             local current_version="not installed"
-            local new_version="3.3.5"
+            local new_version="3.3.6"
             
             if [[ -f "$script_path" ]]; then
                 current_version=$(grep -o "version='ssh-push [0-9]\+\.[0-9]\+\.[0-9]\+'" "$script_path" 2>/dev/null | grep -o "[0-9]\+\.[0-9]\+\.[0-9]\+" | head -1)
@@ -991,7 +991,7 @@ update_ssh_push() {
     
     # For same version updates, checksum comparison is already done in confirm_operation
     local current_version=$(get_current_version)
-    local new_version="3.3.5"
+    local new_version="3.3.6"
     
     if [[ "$current_version" == "$new_version" ]]; then
         # If we reach here, user chose to update anyway or code changed
