@@ -881,6 +881,8 @@ confirm_operation() {
                         print_status "Update cancelled"
                         exit 0
                     fi
+                    # If user chose to update anyway, skip the main confirmation
+                    return 0
                 fi
             fi
             ;;
