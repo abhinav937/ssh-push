@@ -575,8 +575,6 @@ EOF
     fi
     
     print_success "SSH Push script created at $script_path" >&2
-    
-    echo "$script_path"
 }
 
 # Function to create the self-contained ssh-push script
