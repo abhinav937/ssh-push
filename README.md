@@ -12,6 +12,7 @@ A simple, self-contained tool for pushing files to remote devices via SSH with a
 - **No dependencies**: Only requires Python 3 and SSH client
 - **Unified management**: Single script handles install, update, and uninstall
 - **Bulk operations**: Push all files with `--all` option
+- **Speed testing**: Test file transfer performance with `--speed-test`
 - **Robust error handling**: Enhanced validation and error recovery
 
 ## Quick Installation
@@ -101,6 +102,9 @@ ssh-push --setup
 # Test SSH connection
 ssh-push --test
 
+# Test file transfer speed
+ssh-push --speed-test
+
 # Push files
 ssh-push file1.v file2.v
 
@@ -141,7 +145,12 @@ ssh-push --help
    ssh-push --all
    ```
 
-4. **List Remote Files:**
+4. **Test File Transfer Speed:**
+   ```bash
+   ssh-push --speed-test
+   ```
+
+5. **List Remote Files:**
    ```bash
    ssh-push --list
    ```
@@ -175,7 +184,9 @@ ssh-push --config
 
 # Test SSH connection
 ssh-push --test
-```
+
+# Test file transfer speed
+ssh-push --speed-test
 
 ## Configuration
 
@@ -255,6 +266,22 @@ ssh-push --edit
 # Test current configuration
 ssh-push --test
 ```
+
+### Speed Testing
+```bash
+# Test file transfer speed with 10MB test file
+ssh-push --speed-test
+
+# Test file transfer speed (short flag)
+ssh-push -st
+```
+
+The speed test feature:
+- Creates a temporary test file with random data
+- Transfers it to the remote host using your SSH configuration
+- Measures and displays transfer speed in MB/s and Mbps
+- Automatically cleans up test files
+- Helps diagnose network performance issues
 
 ## Troubleshooting
 
@@ -366,7 +393,14 @@ bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-pu
 
 ## Version History
 
-### Version 3.1.0 (Current)
+### Version 3.2.0 (Current)
+- **New Feature**: Added `--speed-test` and `-st` options for file transfer speed testing
+- **Speed Testing**: Creates test files and measures transfer performance
+- **Enhanced Diagnostics**: Helps identify network performance issues
+- **Automatic Cleanup**: Removes test files after speed testing
+- **Short Flag Support**: Added `-st` as shorthand for `--speed-test`
+
+### Version 3.1.0
 - **New Feature**: Added `--all` option to push all non-hidden files
 - **Enhanced Error Handling**: Better validation and error recovery
 - **Improved Installation**: Fixed alias corruption issues
