@@ -335,6 +335,12 @@ EOF
         return 1
     fi
     
+    # Verify the script was created successfully
+    if [[ ! -f "$script_path" ]] || [[ ! -x "$script_path" ]]; then
+        print_error "Failed to create executable script at $script_path"
+        return 1
+    fi
+    
     print_success "SSH Push script created at $script_path"
     
     echo "$script_path"
@@ -361,10 +367,16 @@ setup_shell_alias() {
         print_status "Removed existing ssh-push alias"
     fi
     
-    # Add new alias
+    # Validate script path exists
+    if [[ ! -f "$script_path" ]]; then
+        print_error "Script path does not exist: $script_path"
+        return 1
+    fi
+    
+    # Add new alias with proper quoting
     echo "" >> "$shell_rc"
     echo "# SSH Push Tool alias" >> "$shell_rc"
-    echo "alias ssh-push='$script_path'" >> "$shell_rc"
+    echo "alias ssh-push=\"$script_path\"" >> "$shell_rc"
     
     print_success "SSH Push alias added to $shell_rc"
 }
