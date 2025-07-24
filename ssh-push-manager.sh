@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SSH Push Tool - Unified Manager Script
-# Version: 3.3.2 - Handles install, uninstall, and update operations
+# Version: 3.3.3 - Handles install, uninstall, and update operations
 
 set -e
 
@@ -117,8 +117,6 @@ class SSHPushTool:
             else:
                 print("Generating new key...")
         
-        # Generate new SSH key
-        print("Generating new SSH key...")
         try:
             # Create .ssh directory if it doesn't exist
             ssh_dir = os.path.expanduser("~/.ssh")
