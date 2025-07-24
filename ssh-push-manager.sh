@@ -124,17 +124,23 @@ class SSHPushTool:
             ssh_dir = os.path.expanduser("~/.ssh")
             os.makedirs(ssh_dir, mode=0o700, exist_ok=True)
             
-            # Simple interactive key generation
+            # Manual key generation with user interaction
+            print("Please generate SSH key manually. You will be prompted for:")
+            print("1. File location (press Enter for default)")
+            print("2. Passphrase (press Enter for no passphrase)")
+            print("3. Passphrase confirmation (press Enter again)")
+            print("")
+            
             try:
                 result = subprocess.run([
                     "ssh-keygen", "-t", "rsa", "-b", "4096"
-                ], input="\n\n\n", text=True, timeout=30)
+                ], timeout=60)
                 
                 if result.returncode == 0:
                     print(f"SSH key generated successfully at {default_key_path}")
                     return default_key_path
                 else:
-                    print("Failed to generate SSH key.")
+                    print("SSH key generation failed.")
                     return None
             except subprocess.TimeoutExpired:
                 print("SSH key generation timed out.")
