@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SSH Push Tool - Unified Manager Script
-# Version: 3.0.1 - Handles install, uninstall, and update operations
+# Version: 3.1.0 - Handles install, uninstall, and update operations
 
 set -e
 
@@ -63,7 +63,7 @@ create_ssh_push_script() {
 #!/usr/bin/env python3
 """
 SSH Push Tool - Self-contained script for pushing files to remote devices
-Version: 3.0.1
+Version: 3.1.0
 """
 
 import os
@@ -274,6 +274,29 @@ class SSHPushTool:
         except Exception as e:
             print(f"Error pushing files: {e}")
             return False
+    
+    def get_all_non_hidden_files(self):
+        """Get all non-hidden files in the current directory"""
+        import os
+        files = []
+        current_dir = os.getcwd()
+        
+        try:
+            for item in os.listdir(current_dir):
+                item_path = os.path.join(current_dir, item)
+                # Skip hidden files (starting with .) and directories
+                if not item.startswith('.') and os.path.isfile(item_path):
+                    files.append(item)
+            
+            if not files:
+                print("No non-hidden files found in current directory.")
+            else:
+                print(f"Found {len(files)} non-hidden files to push.")
+                
+            return files
+        except Exception as e:
+            print(f"Error scanning directory: {e}")
+            return []
 
 def main():
     parser = argparse.ArgumentParser(
@@ -285,6 +308,7 @@ Examples:
   ssh-push --edit                     # Edit existing configuration
   ssh-push blinky.v                   # Push single file
   ssh-push file1.v file2.v            # Push multiple files
+  ssh-push --all                      # Push all non-hidden files
   ssh-push --list                     # List remote files
   ssh-push --test                     # Test SSH connection
   ssh-push --config                   # Show configuration
@@ -295,11 +319,12 @@ Examples:
     parser.add_argument('files', nargs='*', help='Files to push to remote host')
     parser.add_argument('--setup', '-s', action='store_true', help='Setup SSH configuration')
     parser.add_argument('--edit', '-e', action='store_true', help='Edit existing SSH configuration')
+    parser.add_argument('--all', '-a', action='store_true', help='Push all non-hidden files in current directory')
     parser.add_argument('--list', '-l', action='store_true', help='List files in remote working directory')
     parser.add_argument('--test', '-t', action='store_true', help='Test SSH connection')
     parser.add_argument('--config', '-c', action='store_true', help='Show current configuration')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    parser.add_argument('--version', action='version', version='ssh-push 3.0.1')
+    parser.add_argument('--version', action='version', version='ssh-push 3.1.0')
     
     args = parser.parse_args()
     
@@ -310,6 +335,11 @@ Examples:
         tool.setup_config()
     elif args.edit:
         tool.edit_config()
+    elif args.all:
+        # Push all non-hidden files
+        files_to_push = tool.get_all_non_hidden_files()
+        if files_to_push:
+            tool.push_files(files_to_push, args.verbose)
     elif args.list:
         tool.list_remote_files()
     elif args.test:

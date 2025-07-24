@@ -11,6 +11,8 @@ A simple, self-contained tool for pushing files to remote devices via SSH with a
 - **Project-specific**: Different SSH settings for different projects
 - **No dependencies**: Only requires Python 3 and SSH client
 - **Unified management**: Single script handles install, update, and uninstall
+- **Bulk operations**: Push all files with `--all` option
+- **Robust error handling**: Enhanced validation and error recovery
 
 ## Quick Installation
 
@@ -102,6 +104,9 @@ ssh-push --test
 # Push files
 ssh-push file1.v file2.v
 
+# Push all files in current directory
+ssh-push --all
+
 # List remote files
 ssh-push --list
 
@@ -129,7 +134,11 @@ ssh-push --help
 
 3. **Push Files:**
    ```bash
+   # Push specific files
    ssh-push file1.v file2.v icesugar_nano.pcf
+   
+   # Push all files in current directory
+   ssh-push --all
    ```
 
 4. **List Remote Files:**
@@ -151,6 +160,9 @@ ssh-push blinky.v
 
 # Push multiple files
 ssh-push top.v clock.v icesugar_nano.pcf
+
+# Push all non-hidden files in current directory
+ssh-push --all
 
 # Push with verbose output
 ssh-push --verbose top.v
@@ -215,6 +227,15 @@ ssh-push file1.v file2.v
 # In project B directory  
 ssh-push --setup  # Configure for project B
 ssh-push file3.v file4.v
+```
+
+### Bulk File Operations
+```bash
+# Push all non-hidden files in current directory
+ssh-push --all
+
+# Push all files with verbose output
+ssh-push --all --verbose
 ```
 
 ### Verbose Output
@@ -342,6 +363,20 @@ bash <(curl -s https://raw.githubusercontent.com/abhinav937/ssh-push/main/ssh-pu
 - Python 3
 - OpenSSH client (ssh, scp)
 - curl (for installation)
+
+## Version History
+
+### Version 3.1.0 (Current)
+- **New Feature**: Added `--all` option to push all non-hidden files
+- **Enhanced Error Handling**: Better validation and error recovery
+- **Improved Installation**: Fixed alias corruption issues
+- **Repository Cleanup**: Removed obsolete files for cleaner maintenance
+- **Better Robustness**: Added path validation and executable verification
+
+### Version 3.0.1
+- **Unified Management**: Single script handles install, update, and uninstall
+- **Self-contained Design**: Complete Python tool embedded in manager script
+- **Cross-platform Support**: Works on Linux, macOS, FreeBSD, and Windows (WSL)
 
 ## Contributing
 
