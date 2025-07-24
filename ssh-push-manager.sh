@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SSH Push Tool - Unified Manager Script
-# Version: 3.3.3 - Handles install, uninstall, and update operations
+# Version: 3.3.4 - Handles install, uninstall, and update operations
 
 set -e
 
@@ -63,7 +63,7 @@ create_ssh_push_script() {
 #!/usr/bin/env python3
 """
 SSH Push Tool - Self-contained script for pushing files to remote devices
-Version: 3.3.3
+Version: 3.3.4
 """
 
 import os
@@ -538,7 +538,7 @@ Examples:
     parser.add_argument('--speed-test', '-st', action='store_true', help='Test file transfer speed with a test file')
     parser.add_argument('--config', '-c', action='store_true', help='Show current configuration')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    parser.add_argument('--version', action='version', version='ssh-push 3.3.3')
+    parser.add_argument('--version', action='version', version='ssh-push 3.3.4')
     
     args = parser.parse_args()
     
@@ -810,7 +810,7 @@ confirm_operation() {
             # Get current version for update
             local script_path="$HOME/.local/bin/ssh-push"
             local current_version="not installed"
-            local new_version="3.3.3"
+            local new_version="3.3.4"
             
             if [[ -f "$script_path" ]]; then
                 current_version=$(grep -o "version='ssh-push [0-9]\+\.[0-9]\+\.[0-9]\+'" "$script_path" 2>/dev/null | grep -o "[0-9]\+\.[0-9]\+\.[0-9]\+" | head -1)
@@ -824,6 +824,47 @@ confirm_operation() {
             echo "Current: $current_version"
             echo "New:     $new_version"
             echo "Configuration will be preserved"
+            
+            # If same version, show additional details
+            if [[ "$current_version" == "$new_version" ]] && [[ "$current_version" != "not installed" ]]; then
+                echo ""
+                echo "Same version detected. Checking for changes..."
+                
+                # Get current checksum and file info
+                local current_checksum=$(get_script_checksum "$script_path")
+                local current_size=$(stat -c%s "$script_path" 2>/dev/null || echo "unknown")
+                local current_date=$(stat -c%y "$script_path" 2>/dev/null | cut -d' ' -f1 || echo "unknown")
+                
+                # Create temporary new script to compare
+                local temp_script=$(mktemp)
+                create_ssh_push_script > "$temp_script" 2>/dev/null
+                local new_checksum=$(get_script_checksum "$temp_script")
+                local new_size=$(stat -c%s "$temp_script" 2>/dev/null || echo "unknown")
+                rm -f "$temp_script"
+                
+                echo "Current checksum: ${current_checksum:0:12}..."
+                echo "Remote checksum:  ${new_checksum:0:12}..."
+                
+                if [[ "$current_size" != "unknown" ]] && [[ "$new_size" != "unknown" ]]; then
+                    echo "File sizes: ${current_size}B vs ${new_size}B"
+                fi
+                
+                if [[ "$current_checksum" != "$new_checksum" ]]; then
+                    echo ""
+                    echo "Code has changed despite same version."
+                    echo "Recommend updating to get latest changes."
+                else
+                    echo ""
+                    echo "No changes detected - already up to date."
+                    echo "Update anyway? (y/N): "
+                    read -n 1 -r
+                    echo
+                    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                        print_status "Update cancelled"
+                        exit 0
+                    fi
+                fi
+            fi
             ;;
     esac
     
@@ -928,26 +969,13 @@ update_ssh_push() {
         return
     fi
     
-    # Check if code has changed (even with same version)
+    # For same version updates, checksum comparison is already done in confirm_operation
     local current_version=$(get_current_version)
-    local current_checksum=$(get_script_checksum "$script_path")
-    local new_version="3.3.3"
+    local new_version="3.3.4"
     
     if [[ "$current_version" == "$new_version" ]]; then
-        print_status "Checking for code changes..."
-        
-        # Create temporary new script to compare checksums
-        local temp_script=$(mktemp)
-        create_ssh_push_script > "$temp_script" 2>/dev/null
-        local new_checksum=$(get_script_checksum "$temp_script")
-        rm -f "$temp_script"
-        
-        if [[ "$current_checksum" != "$new_checksum" ]]; then
-            print_warning "Code changed - updating..."
-        else
-            print_success "Already up to date"
-            return 0
-        fi
+        # If we reach here, user chose to update anyway or code changed
+        print_status "Updating to latest code..."
     fi
     
     # Create the updated self-contained script
