@@ -124,55 +124,23 @@ class SSHPushTool:
             ssh_dir = os.path.expanduser("~/.ssh")
             os.makedirs(ssh_dir, mode=0o700, exist_ok=True)
             
-            # Try different approaches to generate key without passphrase
-            key_generated = False
-            
-            # Method 1: Use -N "" flag
+            # Simple interactive key generation
             try:
                 result = subprocess.run([
-                    "ssh-keygen", "-t", "rsa", "-b", "4096", 
-                    "-f", default_key_path, "-N", ""
-                ], capture_output=True, text=True, timeout=30)
+                    "ssh-keygen", "-t", "rsa", "-b", "4096"
+                ], input="\n\n\n", text=True, timeout=30)
                 
                 if result.returncode == 0:
-                    key_generated = True
                     print(f"SSH key generated successfully at {default_key_path}")
+                    return default_key_path
                 else:
-                    print(f"Method 1 failed: {result.stderr}")
+                    print("Failed to generate SSH key.")
+                    return None
             except subprocess.TimeoutExpired:
-                print("Method 1 timed out, trying alternative approach...")
-            except Exception as e:
-                print(f"Method 1 error: {e}")
-            
-            # Method 2: Use expect-like approach with input
-            if not key_generated:
-                try:
-                    result = subprocess.run([
-                        "ssh-keygen", "-t", "rsa", "-b", "4096", 
-                        "-f", default_key_path
-                    ], capture_output=True, text=True, input="\n\n", timeout=30)
-                    
-                    if result.returncode == 0:
-                        key_generated = True
-                        print(f"SSH key generated successfully at {default_key_path}")
-                    else:
-                        print(f"Method 2 failed: {result.stderr}")
-                except subprocess.TimeoutExpired:
-                    print("Method 2 timed out, trying manual approach...")
-                except Exception as e:
-                    print(f"Method 2 error: {e}")
-            
-            # Method 3: Manual approach with instructions
-            if not key_generated:
-                print("Automatic key generation failed. Please generate manually:")
-                print(f"Run: ssh-keygen -t rsa -b 4096 -f {default_key_path}")
-                print("Press Enter twice when prompted for passphrase (empty passphrase)")
-                print("Then run: ssh-push --setup again")
+                print("SSH key generation timed out.")
                 return None
-            
-            if key_generated:
-                return default_key_path
-            else:
+            except Exception as e:
+                print(f"Error generating SSH key: {e}")
                 return None
                 
         except Exception as e:
