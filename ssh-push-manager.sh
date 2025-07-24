@@ -234,10 +234,10 @@ class SSHPushTool:
                     # Copy key to remote machine
                     copy_key = input("Copy SSH key to remote machine? (Y/n): ").strip().lower()
                     if copy_key in ['', 'y', 'yes']:
-                                            if self.copy_ssh_key_to_remote(config['hostname'], key_path, config['port']):
-                        print("Key setup complete!")
-                    else:
-                        print("Key copy failed. You may need to copy manually.")
+                        if self.copy_ssh_key_to_remote(config['hostname'], key_path, config['port']):
+                            print("Key setup complete!")
+                        else:
+                            print("Key copy failed. You may need to copy manually.")
                     else:
                         print("Key not copied. You may need to copy manually later.")
                 else:
